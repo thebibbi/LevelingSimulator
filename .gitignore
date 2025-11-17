@@ -52,12 +52,15 @@ frontend/out/
 *~
 .DS_Store
 
-# Environment variables
+# Environment variables (but allow .env.example files)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+backend/.env
+frontend/.env
+!**/.env.example
 
 # Logs
 *.log

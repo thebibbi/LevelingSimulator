@@ -3,9 +3,12 @@
  *
  * Provides integration between React frontend and Python FastAPI backend
  * Supports both REST API and WebSocket connections
+ * Enhanced with environment variables, error handling, and retry logic
  */
 
-const DEFAULT_API_URL = 'http://localhost:8000';
+// Use environment variables with fallback
+const DEFAULT_API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_KEY = process.env.REACT_APP_API_KEY || '';
 
 class PlatformAPIClient {
   constructor(baseURL = DEFAULT_API_URL) {
@@ -46,16 +49,24 @@ class PlatformAPIClient {
    */
   async calculateIK(pose) {
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add API key if configured
+      if (API_KEY) {
+        headers['X-API-Key'] = API_KEY;
+      }
+
       const response = await fetch(`${this.baseURL}/calculate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(pose),
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `API error: ${response.status}`);
       }
 
       return await response.json();
