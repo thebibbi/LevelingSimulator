@@ -1,0 +1,44 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # Python formatting
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        files: ^backend/.*\.py$
+        language_version: python3.9
+
+  # Python import sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        files: ^backend/.*\.py$
+        args: ["--profile", "black", "--line-length", "100"]
+
+  # JavaScript/React formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        files: ^frontend/.*\.(js|jsx|json|css|md)$
+        args: ['--write', '--config', 'frontend/.prettierrc']
+
+  # Python linting
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        files: ^backend/.*\.py$
+        args: ['--max-line-length=100', '--extend-ignore=E203,W503']
