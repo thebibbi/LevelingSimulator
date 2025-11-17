@@ -4,9 +4,11 @@ Database models and connection management
 
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Boolean, Text
+
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
+
 from config import settings
 
 Base = declarative_base()
@@ -77,9 +79,7 @@ def init_db():
     if not settings.database_enabled:
         return
 
-    engine = create_engine(
-        settings.database_url, connect_args={"check_same_thread": False}
-    )
+    engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     # Create all tables

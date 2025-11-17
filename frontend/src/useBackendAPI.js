@@ -226,7 +226,7 @@ export function useCalculationComparison() {
         };
       });
 
-      const maxDiff = Math.max(...differences.map(d => d.difference));
+      const maxDiff = Math.max(...differences.map((d) => d.difference));
       const avgDiff = differences.reduce((sum, d) => sum + d.difference, 0) / differences.length;
 
       setComparison({

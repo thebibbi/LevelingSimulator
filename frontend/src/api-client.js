@@ -190,7 +190,7 @@ class PlatformAPIClient {
         if (onMessage) onMessage(data);
 
         // Notify all registered callbacks
-        this.wsCallbacks.forEach(callback => callback(data));
+        this.wsCallbacks.forEach((callback) => callback(data));
       } catch (error) {
         console.error('WebSocket message parse error:', error);
       }

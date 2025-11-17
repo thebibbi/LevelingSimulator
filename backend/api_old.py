@@ -3,20 +3,21 @@ FastAPI REST API for Platform Leveling System
 Exposes inverse kinematics calculations and platform control
 """
 
+import json
+from dataclasses import asdict
+from typing import List, Literal, Optional
+
+import numpy as np
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
-import numpy as np
-import json
-from dataclasses import asdict
 
-from inverse_kinematics import TripodIK, StewartPlatformIK, PlatformConfig
+from inverse_kinematics import PlatformConfig, StewartPlatformIK, TripodIK
 
 app = FastAPI(
     title="Platform Leveling API",
     description="API for Stewart Platform and Tripod inverse kinematics calculations",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # CORS middleware to allow frontend access
@@ -32,6 +33,7 @@ app.add_middleware(
 # Pydantic models for request/response
 class PlatformConfigModel(BaseModel):
     """Platform geometry configuration"""
+
     base_radius: float = Field(default=120.0, description="Base radius in mm")
     platform_radius: float = Field(default=70.0, description="Platform radius in mm")
     nominal_leg_length: float = Field(default=150.0, description="Nominal leg length in mm")
@@ -41,6 +43,7 @@ class PlatformConfigModel(BaseModel):
 
 class PoseRequest(BaseModel):
     """Request for inverse kinematics calculation"""
+
     x: float = Field(default=0.0, description="X translation in mm")
     y: float = Field(default=0.0, description="Y translation in mm")
     z: float = Field(default=0.0, description="Z translation in mm")
@@ -48,19 +51,18 @@ class PoseRequest(BaseModel):
     pitch: float = Field(default=0.0, description="Pitch angle in degrees")
     yaw: float = Field(default=0.0, description="Yaw angle in degrees")
 
-    configuration: Literal["3-3", "4-4", "6-3", "6-3-asymmetric", "6-3-redundant", "6-6", "8-8"] = Field(
-        default="6-3",
-        description="Platform configuration"
+    configuration: Literal["3-3", "4-4", "6-3", "6-3-asymmetric", "6-3-redundant", "6-6", "8-8"] = (
+        Field(default="6-3", description="Platform configuration")
     )
 
     geometry: Optional[PlatformConfigModel] = Field(
-        default=None,
-        description="Optional custom geometry parameters"
+        default=None, description="Optional custom geometry parameters"
     )
 
 
 class LegLengthResponse(BaseModel):
     """Response with calculated leg lengths"""
+
     leg_lengths: List[float] = Field(description="Leg lengths in mm")
     valid: bool = Field(description="Whether the solution is within limits")
     configuration: str = Field(description="Platform configuration used")
@@ -69,6 +71,7 @@ class LegLengthResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """API health check response"""
+
     status: str
     message: str
     version: str
@@ -81,41 +84,25 @@ current_config = PlatformConfigModel()
 def get_configuration_mapping(config: str) -> dict:
     """Get base and platform point configurations for each setup"""
     configurations = {
-        "3-3": {
-            "num_base": 3,
-            "num_platform": 3,
-            "leg_pairs": list(range(3))  # 1:1 mapping
-        },
-        "4-4": {
-            "num_base": 4,
-            "num_platform": 4,
-            "leg_pairs": list(range(4))
-        },
+        "3-3": {"num_base": 3, "num_platform": 3, "leg_pairs": list(range(3))},  # 1:1 mapping
+        "4-4": {"num_base": 4, "num_platform": 4, "leg_pairs": list(range(4))},
         "6-3": {
             "num_base": 6,
             "num_platform": 3,
-            "leg_pairs": [0, 0, 1, 1, 2, 2]  # Paired mapping
+            "leg_pairs": [0, 0, 1, 1, 2, 2],  # Paired mapping
         },
         "6-3-asymmetric": {
             "num_base": 6,
             "num_platform": 3,
-            "leg_pairs": [0, 1, 1, 2, 2, 0]  # Asymmetric pairing
+            "leg_pairs": [0, 1, 1, 2, 2, 0],  # Asymmetric pairing
         },
         "6-3-redundant": {
             "num_base": 6,
             "num_platform": 3,
-            "leg_pairs": [0, 1, 1, 2, 2, 0]  # Alternative pairing
+            "leg_pairs": [0, 1, 1, 2, 2, 0],  # Alternative pairing
         },
-        "6-6": {
-            "num_base": 6,
-            "num_platform": 6,
-            "leg_pairs": list(range(6))
-        },
-        "8-8": {
-            "num_base": 8,
-            "num_platform": 8,
-            "leg_pairs": list(range(8))
-        }
+        "6-6": {"num_base": 6, "num_platform": 6, "leg_pairs": list(range(6))},
+        "8-8": {"num_base": 8, "num_platform": 8, "leg_pairs": list(range(8))},
     }
     return configurations.get(config, configurations["6-3"])
 
@@ -153,28 +140,20 @@ def calculate_ik(pose: PoseRequest) -> LegLengthResponse:
     platform_points = generate_points(
         num_platform,
         geometry.platform_radius,
-        np.pi / num_platform if num_platform < 6 else np.pi / 6
+        np.pi / num_platform if num_platform < 6 else np.pi / 6,
     )
 
     # Create rotation matrix
     def rotation_matrix(roll, pitch, yaw):
-        Rx = np.array([
-            [1, 0, 0],
-            [0, np.cos(roll), -np.sin(roll)],
-            [0, np.sin(roll), np.cos(roll)]
-        ])
+        Rx = np.array(
+            [[1, 0, 0], [0, np.cos(roll), -np.sin(roll)], [0, np.sin(roll), np.cos(roll)]]
+        )
 
-        Ry = np.array([
-            [np.cos(pitch), 0, np.sin(pitch)],
-            [0, 1, 0],
-            [-np.sin(pitch), 0, np.cos(pitch)]
-        ])
+        Ry = np.array(
+            [[np.cos(pitch), 0, np.sin(pitch)], [0, 1, 0], [-np.sin(pitch), 0, np.cos(pitch)]]
+        )
 
-        Rz = np.array([
-            [np.cos(yaw), -np.sin(yaw), 0],
-            [np.sin(yaw), np.cos(yaw), 0],
-            [0, 0, 1]
-        ])
+        Rz = np.array([[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0, 0, 1]])
 
         return Rz @ Ry @ Rx
 
@@ -202,8 +181,9 @@ def calculate_ik(pose: PoseRequest) -> LegLengthResponse:
         leg_lengths.append(float(leg_length))
 
     # Check validity
-    valid = all(geometry.min_leg_length <= length <= geometry.max_leg_length
-                for length in leg_lengths)
+    valid = all(
+        geometry.min_leg_length <= length <= geometry.max_leg_length for length in leg_lengths
+    )
 
     return LegLengthResponse(
         leg_lengths=leg_lengths,
@@ -215,31 +195,24 @@ def calculate_ik(pose: PoseRequest) -> LegLengthResponse:
             "z": pose.z,
             "roll": pose.roll,
             "pitch": pose.pitch,
-            "yaw": pose.yaw
-        }
+            "yaw": pose.yaw,
+        },
     )
 
 
 # API Endpoints
 
+
 @app.get("/", response_model=HealthResponse)
 async def root():
     """Health check endpoint"""
-    return HealthResponse(
-        status="ok",
-        message="Platform Leveling API is running",
-        version="1.0.0"
-    )
+    return HealthResponse(status="ok", message="Platform Leveling API is running", version="1.0.0")
 
 
 @app.get("/health", response_model=HealthResponse)
 async def health():
     """Detailed health check"""
-    return HealthResponse(
-        status="healthy",
-        message="All systems operational",
-        version="1.0.0"
-    )
+    return HealthResponse(status="healthy", message="All systems operational", version="1.0.0")
 
 
 @app.post("/calculate", response_model=LegLengthResponse)
@@ -260,7 +233,7 @@ async def calculate_leveling(
     roll: float = Field(description="Current roll angle in degrees"),
     pitch: float = Field(description="Current pitch angle in degrees"),
     yaw: float = Field(default=0.0, description="Current yaw angle in degrees"),
-    configuration: str = Field(default="6-3", description="Platform configuration")
+    configuration: str = Field(default="6-3", description="Platform configuration"),
 ):
     """
     Calculate leg lengths needed to level the platform
@@ -270,11 +243,7 @@ async def calculate_leveling(
     try:
         # To level, we apply opposite rotation
         pose = PoseRequest(
-            x=0, y=0, z=0,
-            roll=-roll,
-            pitch=-pitch,
-            yaw=-yaw,
-            configuration=configuration
+            x=0, y=0, z=0, roll=-roll, pitch=-pitch, yaw=-yaw, configuration=configuration
         )
         return calculate_ik(pose)
     except Exception as e:
@@ -304,44 +273,44 @@ async def get_available_configurations():
                 "id": "3-3",
                 "name": "3-3 Tripod",
                 "description": "3 base points, 3 platform points - simplest configuration",
-                "num_legs": 3
+                "num_legs": 3,
             },
             {
                 "id": "4-4",
                 "name": "4-4 Square",
                 "description": "4 base points, 4 platform points - square configuration",
-                "num_legs": 4
+                "num_legs": 4,
             },
             {
                 "id": "6-3",
                 "name": "6-3 Standard",
                 "description": "6 base points, 3 platform points - standard pairing",
-                "num_legs": 6
+                "num_legs": 6,
             },
             {
                 "id": "6-3-asymmetric",
                 "name": "6-3 Asymmetric",
                 "description": "6 base points, 3 platform points - asymmetric pairing",
-                "num_legs": 6
+                "num_legs": 6,
             },
             {
                 "id": "6-3-redundant",
                 "name": "6-3 Redundant",
                 "description": "6 base points, 3 platform points - redundant configuration",
-                "num_legs": 6
+                "num_legs": 6,
             },
             {
                 "id": "6-6",
                 "name": "6-6 Hexagonal",
                 "description": "6 base points, 6 platform points - classic Stewart platform",
-                "num_legs": 6
+                "num_legs": 6,
             },
             {
                 "id": "8-8",
                 "name": "8-8 Octagonal",
                 "description": "8 base points, 8 platform points - maximum redundancy",
-                "num_legs": 8
-            }
+                "num_legs": 8,
+            },
         ]
     }
 
@@ -379,6 +348,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 if __name__ == "__main__":
     import uvicorn
+
     print("Starting Platform Leveling API...")
     print("API will be available at http://localhost:8000")
     print("Documentation at http://localhost:8000/docs")
