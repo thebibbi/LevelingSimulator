@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useRef, useEffect, useCallback } from "react";
-import * as THREE from "three";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Line, Sphere } from "@react-three/drei";
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import * as THREE from 'three';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Line, Sphere } from '@react-three/drei';
 
 /**
  * Stewart 6-3 Browser Visualizer (robust R3F-safe build)
@@ -24,29 +24,34 @@ const DEG2RAD = Math.PI / 180;
 
 function rotXYZ(roll, pitch, yaw) {
   // ZYX convention: Rz(yaw)*Ry(pitch)*Rx(roll)
-  const cr = Math.cos(roll), sr = Math.sin(roll);
-  const cp = Math.cos(pitch), sp = Math.sin(pitch);
-  const cy = Math.cos(yaw), sy = Math.sin(yaw);
+  const cr = Math.cos(roll),
+    sr = Math.sin(roll);
+  const cp = Math.cos(pitch),
+    sp = Math.sin(pitch);
+  const cy = Math.cos(yaw),
+    sy = Math.sin(yaw);
   const Rz = [
     [cy, -sy, 0],
-    [sy,  cy, 0],
-    [ 0,   0, 1],
+    [sy, cy, 0],
+    [0, 0, 1],
   ];
   const Ry = [
-    [ cp, 0, sp],
-    [  0, 1,  0],
+    [cp, 0, sp],
+    [0, 1, 0],
     [-sp, 0, cp],
   ];
   const Rx = [
-    [1,  0,   0],
+    [1, 0, 0],
     [0, cr, -sr],
-    [0, sr,  cr],
+    [0, sr, cr],
   ];
   return matMul(matMul(Rz, Ry), Rx);
 }
 
 function matMul(A, B) {
-  const m = A.length, n = B[0].length, k = B.length;
+  const m = A.length,
+    n = B[0].length,
+    k = B.length;
   const C = Array.from({ length: m }, () => Array(n).fill(0));
   for (let i = 0; i < m; i++) {
     for (let j = 0; j < n; j++) {
@@ -66,8 +71,8 @@ function matVec(R, v) {
   ];
 }
 
-const add = (a,b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]];
-const sub = (a,b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]];
+const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const norm = (a) => Math.hypot(a[0], a[1], a[2]);
 
 function regularHex(radius, z = 0, phase = 0) {
@@ -104,14 +109,14 @@ function getGeometry(configType = '6-3', params = {}) {
   const {
     baseRadius: baseRadiusParam = 120,
     platRadius: platRadiusParam = 70,
-    l0: l0Param = 150
+    l0: l0Param = 150,
   } = params;
-  
-  switch(configType) {
+
+  switch (configType) {
     case '8-8':
       // 8-8 configuration: 8 base points, 8 platform points
       const baseRadius88 = baseRadiusParam; // mm
-      const platRadius88 = platRadiusParam;  // mm
+      const platRadius88 = platRadiusParam; // mm
       const basePhase88 = 0 * DEG2RAD;
       const platPhase88 = 0 * DEG2RAD;
       const l0_88 = Array(8).fill(l0Param); // nominal absolute lengths (mm)
@@ -119,18 +124,18 @@ function getGeometry(configType = '6-3', params = {}) {
       const platLocal88 = regularOct(platRadius88, 0, platPhase88);
       // Each leg connects to corresponding platform point
       const legToPidx88 = [0, 1, 2, 3, 4, 5, 6, 7];
-      return { 
-        basePts: basePts88, 
-        platLocal: platLocal88, 
-        l0: l0_88, 
+      return {
+        basePts: basePts88,
+        platLocal: platLocal88,
+        l0: l0_88,
         legToPidx: legToPidx88,
-        configType
+        configType,
       };
-    
+
     case '6-6':
       // 6-6 configuration: 6 base points, 6 platform points
       const baseRadius66 = baseRadiusParam; // mm
-      const platRadius66 = platRadiusParam;  // mm
+      const platRadius66 = platRadiusParam; // mm
       const basePhase66 = 0 * DEG2RAD;
       const platPhase66 = 0 * DEG2RAD;
       const l0_66 = Array(6).fill(l0Param); // nominal absolute lengths (mm)
@@ -138,20 +143,20 @@ function getGeometry(configType = '6-3', params = {}) {
       const platLocal66 = regularHex(platRadius66, 0, platPhase66);
       // Each leg connects to corresponding platform point
       const legToPidx66 = [0, 1, 2, 3, 4, 5];
-      return { 
-        basePts: basePts66, 
-        platLocal: platLocal66, 
-        l0: l0_66, 
+      return {
+        basePts: basePts66,
+        platLocal: platLocal66,
+        l0: l0_66,
         legToPidx: legToPidx66,
-        configType
+        configType,
       };
-    
+
     case '6-3-redundant':
       // Redundant 6-3 configuration: 6 base points, 3 platform points with extra support
       // For this configuration, we'll use a different approach where we have 6 base points but
       // each platform point connects to 2 base points, with some base points connecting to multiple platform points
       const baseRadius63r = baseRadiusParam; // mm
-      const platRadius63r = platRadiusParam;  // mm
+      const platRadius63r = platRadiusParam; // mm
       const basePhase63r = 0 * DEG2RAD;
       const platPhase63r = 30 * DEG2RAD;
       // 6 legs for redundancy (same as standard 6-3 but with different mapping)
@@ -160,18 +165,18 @@ function getGeometry(configType = '6-3', params = {}) {
       const platLocal63r = triPoints(platRadius63r, 0, platPhase63r);
       // Redundant leg pairing: each platform point connects to 2 base points
       const legToPidx63r = [0, 0, 1, 1, 2, 2];
-      return { 
-        basePts: basePts63r, 
-        platLocal: platLocal63r, 
-        l0: l0_63r, 
+      return {
+        basePts: basePts63r,
+        platLocal: platLocal63r,
+        l0: l0_63r,
         legToPidx: legToPidx63r,
-        configType
+        configType,
       };
-    
+
     case '6-3-asymmetric':
       // Asymmetric 6-3 configuration: 6 base points, 3 platform points with asymmetric arrangement
       const baseRadius63a = baseRadiusParam; // mm
-      const platRadius63a = platRadiusParam;  // mm
+      const platRadius63a = platRadiusParam; // mm
       const basePhase63a = 0 * DEG2RAD;
       const platPhase63a = 0 * DEG2RAD; // No phase shift for asymmetric arrangement
       const l0_63a = Array(6).fill(l0Param); // nominal absolute lengths (mm)
@@ -179,18 +184,18 @@ function getGeometry(configType = '6-3', params = {}) {
       const platLocal63a = triPoints(platRadius63a, 0, platPhase63a);
       // Asymmetric leg pairing
       const legToPidx63a = [0, 1, 1, 2, 2, 0];
-      return { 
-        basePts: basePts63a, 
-        platLocal: platLocal63a, 
-        l0: l0_63a, 
+      return {
+        basePts: basePts63a,
+        platLocal: platLocal63a,
+        l0: l0_63a,
         legToPidx: legToPidx63a,
-        configType
+        configType,
       };
-    
+
     case '4-4':
       // 4-4 configuration: 4 base points, 4 platform points
       const baseRadius44 = baseRadiusParam; // mm
-      const platRadius44 = platRadiusParam;  // mm
+      const platRadius44 = platRadiusParam; // mm
       const basePhase44 = 0 * DEG2RAD;
       const platPhase44 = 0 * DEG2RAD;
       const l0_44 = Array(4).fill(l0Param); // nominal absolute lengths (mm)
@@ -198,18 +203,18 @@ function getGeometry(configType = '6-3', params = {}) {
       const platLocal44 = squarePoints(platRadius44, 0, platPhase44);
       // Each leg connects to corresponding platform point
       const legToPidx44 = [0, 1, 2, 3];
-      return { 
-        basePts: basePts44, 
-        platLocal: platLocal44, 
-        l0: l0_44, 
+      return {
+        basePts: basePts44,
+        platLocal: platLocal44,
+        l0: l0_44,
         legToPidx: legToPidx44,
-        configType
+        configType,
       };
-    
+
     case '3-3':
       // 3-3 configuration: 3 base points, 3 platform points
       const baseRadius33 = baseRadiusParam; // mm
-      const platRadius33 = platRadiusParam;  // mm
+      const platRadius33 = platRadiusParam; // mm
       const basePhase33 = 0 * DEG2RAD;
       const platPhase33 = 30 * DEG2RAD;
       const l0_33 = Array(3).fill(l0Param); // nominal absolute lengths (mm)
@@ -217,19 +222,19 @@ function getGeometry(configType = '6-3', params = {}) {
       const platLocal33 = triPoints(platRadius33, 0, platPhase33);
       // Each leg connects to corresponding platform point
       const legToPidx33 = [0, 1, 2];
-      return { 
-        basePts: basePts33, 
-        platLocal: platLocal33, 
-        l0: l0_33, 
+      return {
+        basePts: basePts33,
+        platLocal: platLocal33,
+        l0: l0_33,
         legToPidx: legToPidx33,
-        configType
+        configType,
       };
-    
+
     case '6-3':
     default:
       // 6-3 configuration: 6 base points, 3 platform points
       const baseRadius = baseRadiusParam; // mm
-      const platRadius = platRadiusParam;  // mm
+      const platRadius = platRadiusParam; // mm
       const basePhase = 0 * DEG2RAD;
       const platPhase = 30 * DEG2RAD;
       const l0 = Array(6).fill(l0Param); // nominal absolute lengths (mm)
@@ -261,18 +266,18 @@ function validatePlatformJointSpacing(platPts, minSpacing = 20) {
       const dx = platPts[i][0] - platPts[j][0];
       const dy = platPts[i][1] - platPts[j][1];
       const dz = platPts[i][2] - platPts[j][2];
-      const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
-      
+      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
       if (distance < minSpacing) {
         return {
           valid: false,
-          message: `Platform joints ${i} and ${j} are too close (${distance.toFixed(1)} mm < ${minSpacing} mm)`
+          message: `Platform joints ${i} and ${j} are too close (${distance.toFixed(1)} mm < ${minSpacing} mm)`,
         };
       }
     }
   }
-  
-  return { valid: true, message: "Platform joint spacing is valid" };
+
+  return { valid: true, message: 'Platform joint spacing is valid' };
 }
 
 // Check if base joints are too close to each other
@@ -282,61 +287,61 @@ function validateBaseJointSpacing(basePts, minSpacing = 20) {
     for (let j = i + 1; j < basePts.length; j++) {
       const dx = basePts[i][0] - basePts[j][0];
       const dy = basePts[i][1] - basePts[j][1];
-      const distance = Math.sqrt(dx*dx + dy*dy); // Only XY plane for base
-      
+      const distance = Math.sqrt(dx * dx + dy * dy); // Only XY plane for base
+
       if (distance < minSpacing) {
         return {
           valid: false,
-          message: `Base joints ${i} and ${j} are too close (${distance.toFixed(1)} mm < ${minSpacing} mm)`
+          message: `Base joints ${i} and ${j} are too close (${distance.toFixed(1)} mm < ${minSpacing} mm)`,
         };
       }
     }
   }
-  
-  return { valid: true, message: "Base joint spacing is valid" };
+
+  return { valid: true, message: 'Base joint spacing is valid' };
 }
 
 // Check if leg lengths are physically possible
 function validateLegLengths(ikResult, l0, limits) {
   const { lengthsAbs } = ikResult;
-  
+
   for (let i = 0; i < lengthsAbs.length; i++) {
     const length = lengthsAbs[i];
-    
+
     // Check if leg is too short (compressed beyond limits)
     if (length < limits.lminAbs) {
       return {
         valid: false,
-        message: `Leg ${i} is too short (${length.toFixed(1)} mm < ${limits.lminAbs} mm)`
+        message: `Leg ${i} is too short (${length.toFixed(1)} mm < ${limits.lminAbs} mm)`,
       };
     }
-    
+
     // Check if leg is too long (extended beyond limits)
     if (length > limits.lmaxAbs) {
       return {
         valid: false,
-        message: `Leg ${i} is too long (${length.toFixed(1)} mm > ${limits.lmaxAbs} mm)`
+        message: `Leg ${i} is too long (${length.toFixed(1)} mm > ${limits.lmaxAbs} mm)`,
       };
     }
-    
+
     // Check if leg is extremely short (nearly collapsed)
     if (length < l0 * 0.5) {
       return {
         valid: false,
-        message: `Leg ${i} is dangerously short (${length.toFixed(1)} mm < ${l0 * 0.5} mm)`
+        message: `Leg ${i} is dangerously short (${length.toFixed(1)} mm < ${l0 * 0.5} mm)`,
       };
     }
-    
+
     // Check if leg is extremely long (over-extended)
     if (length > l0 * 1.8) {
       return {
         valid: false,
-        message: `Leg ${i} is over-extended (${length.toFixed(1)} mm > ${l0 * 1.8} mm)`
+        message: `Leg ${i} is over-extended (${length.toFixed(1)} mm > ${l0 * 1.8} mm)`,
       };
     }
   }
-  
-  return { valid: true, message: "Leg lengths are within safe limits" };
+
+  return { valid: true, message: 'Leg lengths are within safe limits' };
 }
 
 function inverseKinematics({ basePts, platLocal, legToPidx, l0 }, pose) {
@@ -345,14 +350,14 @@ function inverseKinematics({ basePts, platLocal, legToPidx, l0 }, pose) {
   const d = P6.map((P, i) => sub(P, basePts[i]));
   const lengthsAbs = d.map((v) => norm(v));
   const extensions = lengthsAbs.map((L, i) => L - l0[i]);
-  
+
   // Calculate joint angles (angle between leg and vertical)
   const jointAngles = d.map((vec) => {
     const horizontalDist = Math.hypot(vec[0], vec[1]);
     const angle = Math.atan2(horizontalDist, vec[2]) * (180 / Math.PI);
     return angle;
   });
-  
+
   return { P3, P6, lengthsAbs, extensions, jointAngles };
 }
 
@@ -362,15 +367,13 @@ function inverseKinematics({ basePts, platLocal, legToPidx, l0 }, pose) {
 function isPoseReachable(geom, pose, limits) {
   try {
     const ik = inverseKinematics(geom, pose);
-    
+
     // Check if all leg lengths are within limits
-    const allInRange = ik.lengthsAbs.every(L => 
-      L >= limits.lminAbs && L <= limits.lmaxAbs
-    );
-    
+    const allInRange = ik.lengthsAbs.every((L) => L >= limits.lminAbs && L <= limits.lmaxAbs);
+
     // Check if angles are reasonable (not too extreme)
-    const anglesOk = ik.jointAngles.every(angle => angle < 75); // Max 75 degrees from vertical
-    
+    const anglesOk = ik.jointAngles.every((angle) => angle < 75); // Max 75 degrees from vertical
+
     return allInRange && anglesOk;
   } catch {
     return false;
@@ -382,18 +385,21 @@ function detectSingularity(geom, pose) {
   const ik = inverseKinematics(geom, pose);
   const { basePts } = geom;
   const { P6 } = ik;
-  
+
   // Calculate leg direction vectors
   const legVectors = P6.map((p, i) => sub(p, basePts[i]));
-  
+
   // Check for near-parallel legs (singularity indicator)
   for (let i = 0; i < legVectors.length - 1; i++) {
     for (let j = i + 1; j < legVectors.length; j++) {
-      const dot = legVectors[i][0]*legVectors[j][0] + legVectors[i][1]*legVectors[j][1] + legVectors[i][2]*legVectors[j][2];
+      const dot =
+        legVectors[i][0] * legVectors[j][0] +
+        legVectors[i][1] * legVectors[j][1] +
+        legVectors[i][2] * legVectors[j][2];
       const mag1 = norm(legVectors[i]);
       const mag2 = norm(legVectors[j]);
       const cosAngle = dot / (mag1 * mag2);
-      
+
       // If legs are nearly parallel (cos close to 1 or -1)
       // Use stricter threshold: 0.995 means angle < ~5.7 degrees
       if (Math.abs(cosAngle) > 0.995) {
@@ -401,14 +407,14 @@ function detectSingularity(geom, pose) {
       }
     }
   }
-  
+
   // Check for extreme joint angles (very close to horizontal)
-  const extremeAngles = ik.jointAngles.some(angle => angle > 75);
+  const extremeAngles = ik.jointAngles.some((angle) => angle > 75);
   if (extremeAngles) {
-    return { isSingular: true, message: "Extreme joint angles detected" };
+    return { isSingular: true, message: 'Extreme joint angles detected' };
   }
-  
-  return { isSingular: false, message: "No singularity detected" };
+
+  return { isSingular: false, message: 'No singularity detected' };
 }
 
 // Check for leg collisions
@@ -416,31 +422,39 @@ function detectCollisions(geom, pose) {
   const ik = inverseKinematics(geom, pose);
   const { basePts } = geom;
   const { P6 } = ik;
-  
+
   // Check if any legs intersect
   for (let i = 0; i < basePts.length - 1; i++) {
     for (let j = i + 1; j < basePts.length; j++) {
       // Simple distance check between leg midpoints
-      const mid1 = [(basePts[i][0] + P6[i][0])/2, (basePts[i][1] + P6[i][1])/2, (basePts[i][2] + P6[i][2])/2];
-      const mid2 = [(basePts[j][0] + P6[j][0])/2, (basePts[j][1] + P6[j][1])/2, (basePts[j][2] + P6[j][2])/2];
-      
+      const mid1 = [
+        (basePts[i][0] + P6[i][0]) / 2,
+        (basePts[i][1] + P6[i][1]) / 2,
+        (basePts[i][2] + P6[i][2]) / 2,
+      ];
+      const mid2 = [
+        (basePts[j][0] + P6[j][0]) / 2,
+        (basePts[j][1] + P6[j][1]) / 2,
+        (basePts[j][2] + P6[j][2]) / 2,
+      ];
+
       const dist = norm(sub(mid1, mid2));
       const minSafeDist = 20; // mm
-      
+
       if (dist < minSafeDist) {
         return { hasCollision: true, message: `Legs ${i} and ${j} are too close` };
       }
     }
   }
-  
-  return { hasCollision: false, message: "No collisions detected" };
+
+  return { hasCollision: false, message: 'No collisions detected' };
 }
 
 // Calculate workspace envelope (sample grid of positions)
 function calculateWorkspaceEnvelope(geom, limits, resolution = 10) {
   const envelope = [];
   const range = 50; // mm range to test
-  
+
   for (let x = -range; x <= range; x += resolution) {
     for (let y = -range; y <= range; y += resolution) {
       for (let z = 120; z <= 220; z += resolution) {
@@ -451,28 +465,28 @@ function calculateWorkspaceEnvelope(geom, limits, resolution = 10) {
       }
     }
   }
-  
+
   return envelope;
 }
 
 // Calculate workspace utilization percentage
 function calculateWorkspaceUtilization(geom, pose, limits) {
   const ik = inverseKinematics(geom, pose);
-  
+
   // Calculate how much of the available leg extension is being used
   const utilizations = ik.lengthsAbs.map((L, i) => {
     const range = limits.lmaxAbs - limits.lminAbs;
     const used = L - limits.lminAbs;
     return (used / range) * 100;
   });
-  
+
   const avgUtilization = utilizations.reduce((a, b) => a + b, 0) / utilizations.length;
-  
+
   return {
     average: avgUtilization,
     perLeg: utilizations,
     max: Math.max(...utilizations),
-    min: Math.min(...utilizations)
+    min: Math.min(...utilizations),
   };
 }
 
@@ -489,10 +503,10 @@ function WorkspaceEnvelope({ geom, limits, currentPose, resolution = 15 }) {
   const points = useMemo(() => {
     const envelope = [];
     const range = 40;
-    
+
     // Get current position and orientation from currentPose
     const [currX, currY, currZ, roll, pitch, yaw] = currentPose || [0, 0, 160, 0, 0, 0];
-    
+
     // Sample positions around current pose
     for (let x = -range; x <= range; x += resolution) {
       for (let y = -range; y <= range; y += resolution) {
@@ -502,13 +516,11 @@ function WorkspaceEnvelope({ geom, limits, currentPose, resolution = 15 }) {
           if (isPoseReachable(geom, pose, limits)) {
             // Calculate distance from current position
             const dist = Math.sqrt(
-              Math.pow(x - currX, 2) + 
-              Math.pow(y - currY, 2) + 
-              Math.pow(z - currZ, 2)
+              Math.pow(x - currX, 2) + Math.pow(y - currY, 2) + Math.pow(z - currZ, 2)
             );
-            envelope.push({ 
+            envelope.push({
               position: new THREE.Vector3(x, y, z),
-              distance: dist
+              distance: dist,
             });
           }
         }
@@ -520,7 +532,7 @@ function WorkspaceEnvelope({ geom, limits, currentPose, resolution = 15 }) {
   // Find max distance for normalization
   const maxDist = useMemo(() => {
     if (points.length === 0) return 1;
-    return Math.max(...points.map(p => p.distance));
+    return Math.max(...points.map((p) => p.distance));
   }, [points]);
 
   return (
@@ -542,7 +554,7 @@ function WorkspaceEnvelope({ geom, limits, currentPose, resolution = 15 }) {
           const t = (normalized - 0.67) * 3;
           color = new THREE.Color(1, 0.7 - t * 0.7, 0.2 + t * 0.3);
         }
-        
+
         return (
           <Sphere key={i} args={[2.5, 6, 6]} position={point.position}>
             <meshBasicMaterial color={color} transparent opacity={0.5} />
@@ -558,20 +570,20 @@ function ForceVectors({ geom, pose, ik }) {
   const forces = useMemo(() => {
     const { basePts } = geom;
     const { P6, lengthsAbs } = ik;
-    
+
     return basePts.map((base, i) => {
       const platform = P6[i];
       const direction = sub(platform, base);
       const length = lengthsAbs[i];
       const force = length / 150; // Normalize force
-      
+
       // Calculate force vector (pointing from platform to base)
-      const forceDir = direction.map(d => -d * force * 0.3);
-      
+      const forceDir = direction.map((d) => -d * force * 0.3);
+
       return {
         start: platform,
         end: [platform[0] + forceDir[0], platform[1] + forceDir[1], platform[2] + forceDir[2]],
-        magnitude: force
+        magnitude: force,
       };
     });
   }, [geom, pose, ik]);
@@ -579,14 +591,10 @@ function ForceVectors({ geom, pose, ik }) {
   return (
     <group>
       {forces.map((force, i) => {
-        const color = force.magnitude > 1.2 ? '#ff4444' : force.magnitude > 1.0 ? '#ffaa44' : '#44ff44';
+        const color =
+          force.magnitude > 1.2 ? '#ff4444' : force.magnitude > 1.0 ? '#ffaa44' : '#44ff44';
         return (
-          <Line
-            key={i}
-            points={toVec3([force.start, force.end])}
-            color={color}
-            lineWidth={3}
-          />
+          <Line key={i} points={toVec3([force.start, force.end])} color={color} lineWidth={3} />
         );
       })}
     </group>
@@ -599,7 +607,7 @@ function LegHeatmap({ geom, ik, limits }) {
     return ik.lengthsAbs.map((length) => {
       const range = limits.lmaxAbs - limits.lminAbs;
       const normalized = (length - limits.lminAbs) / range;
-      
+
       // Color gradient: green -> yellow -> red
       if (normalized < 0.5) {
         const t = normalized * 2;
@@ -617,12 +625,7 @@ function LegHeatmap({ geom, ik, limits }) {
   return (
     <group>
       {basePts.map((base, i) => (
-        <Line
-          key={i}
-          points={toVec3([base, P6[i]])}
-          color={legColors[i]}
-          lineWidth={4}
-        />
+        <Line key={i} points={toVec3([base, P6[i]])} color={legColors[i]} lineWidth={4} />
       ))}
     </group>
   );
@@ -631,12 +634,12 @@ function LegHeatmap({ geom, ik, limits }) {
 // Measurement Tool Component
 function MeasurementTool({ point1, point2 }) {
   if (!point1 || !point2) return null;
-  
+
   const distance = norm(sub(point1, point2));
   const midpoint = [
     (point1[0] + point2[0]) / 2,
     (point1[1] + point2[1]) / 2,
-    (point1[2] + point2[2]) / 2
+    (point1[2] + point2[2]) / 2,
   ];
 
   return (
@@ -655,28 +658,51 @@ function MeasurementTool({ point1, point2 }) {
 // Grid Helper with customizable size (horizontal, on XY plane at Z=0)
 function CustomGrid({ size = 400, divisions = 20, visible = true }) {
   if (!visible) return null;
-  
+
   // Rotate grid to be on XY plane (base is at Z=0)
   // gridHelper default is XZ plane, rotate 90° around X axis to make it XY
   return (
-    <gridHelper args={[size, divisions, '#444444', '#222222']} 
-      rotation={[Math.PI / 2, 0, 0]} 
-      position={[0, 0, 0]} />
+    <gridHelper
+      args={[size, divisions, '#444444', '#222222']}
+      rotation={[Math.PI / 2, 0, 0]}
+      position={[0, 0, 0]}
+    />
   );
 }
 
 // Coordinate Axes
 function CoordinateAxes({ size = 100, visible = true }) {
   if (!visible) return null;
-  
+
   return (
     <group>
       {/* X axis - Red */}
-      <Line points={toVec3([[0, 0, 0], [size, 0, 0]])} color="#ff0000" lineWidth={2} />
+      <Line
+        points={toVec3([
+          [0, 0, 0],
+          [size, 0, 0],
+        ])}
+        color="#ff0000"
+        lineWidth={2}
+      />
       {/* Y axis - Green */}
-      <Line points={toVec3([[0, 0, 0], [0, size, 0]])} color="#00ff00" lineWidth={2} />
+      <Line
+        points={toVec3([
+          [0, 0, 0],
+          [0, size, 0],
+        ])}
+        color="#00ff00"
+        lineWidth={2}
+      />
       {/* Z axis - Blue */}
-      <Line points={toVec3([[0, 0, 0], [0, 0, size]])} color="#0000ff" lineWidth={2} />
+      <Line
+        points={toVec3([
+          [0, 0, 0],
+          [0, 0, size],
+        ])}
+        color="#0000ff"
+        lineWidth={2}
+      />
     </group>
   );
 }
@@ -684,10 +710,10 @@ function CoordinateAxes({ size = 100, visible = true }) {
 // Camera Controller for different view modes
 function CameraController({ viewMode }) {
   const { camera } = useThree();
-  
+
   useEffect(() => {
     const targetPosition = { x: 0, y: 0, z: 160 }; // Platform center
-    
+
     switch (viewMode) {
       case 'top':
         // Top view - looking down Z axis from above
@@ -715,66 +741,138 @@ function CameraController({ viewMode }) {
         camera.lookAt(0, 0, 160);
         break;
     }
-    
+
     camera.updateProjectionMatrix();
   }, [viewMode, camera]);
-  
+
   return null;
 }
 
 // ------------------ R3F stage (inside Canvas only) ------------------ //
 function StewartStage({ pose, anim, geom, onPose, visualizations, limits, viewMode }) {
   // Local animated pose lives INSIDE Canvas (safe for useFrame)
-  const [localPose, setLocalPose] = useState(() => pose || { x:0, y:0, z:160, roll:0, pitch:0, yaw:0 });
+  const [localPose, setLocalPose] = useState(
+    () => pose || { x: 0, y: 0, z: 160, roll: 0, pitch: 0, yaw: 0 }
+  );
 
   // Stable callback ref to avoid capturing stale parent setter during frames
   const onPoseRef = useRef(onPose);
-  useEffect(() => { onPoseRef.current = onPose; }, [onPose]);
+  useEffect(() => {
+    onPoseRef.current = onPose;
+  }, [onPose]);
 
   const throttler = useRef({ last: 0 });
 
   useFrame((state) => {
     if (!anim) return;
     const t = state.clock.elapsedTime;
-    const x = 10 * Math.sin(2*Math.PI*0.5*t);
-    const y = 10 * Math.sin(2*Math.PI*0.25*t + Math.PI/3);
-    const z = 160 + 5 * Math.sin(2*Math.PI*0.2*t);
-    const roll = 2 * Math.sin(2*Math.PI*0.2*t);
-    const pitch = 2 * Math.sin(2*Math.PI*0.27*t + 0.6);
-    const yaw = 5 * Math.sin(2*Math.PI*0.15*t);
+    const x = 10 * Math.sin(2 * Math.PI * 0.5 * t);
+    const y = 10 * Math.sin(2 * Math.PI * 0.25 * t + Math.PI / 3);
+    const z = 160 + 5 * Math.sin(2 * Math.PI * 0.2 * t);
+    const roll = 2 * Math.sin(2 * Math.PI * 0.2 * t);
+    const pitch = 2 * Math.sin(2 * Math.PI * 0.27 * t + 0.6);
+    const yaw = 5 * Math.sin(2 * Math.PI * 0.15 * t);
 
     const p = { x, y, z, roll, pitch, yaw };
     setLocalPose(p);
 
     // Throttle syncing to parent UI (~15 Hz) and guard against undefined callback
-    if (onPoseRef.current && typeof onPoseRef.current === "function") {
-      if (t - throttler.current.last > 1/15) {
-        try { onPoseRef.current(p); } catch { /* no-op */ }
+    if (onPoseRef.current && typeof onPoseRef.current === 'function') {
+      if (t - throttler.current.last > 1 / 15) {
+        try {
+          onPoseRef.current(p);
+        } catch {
+          /* no-op */
+        }
         throttler.current.last = t;
       }
     }
   });
 
   // Choose which pose to render: animated or UI-driven
-  const usedPose = anim ? localPose : (pose || { x:0, y:0, z:160, roll:0, pitch:0, yaw:0 });
+  const usedPose = anim ? localPose : pose || { x: 0, y: 0, z: 160, roll: 0, pitch: 0, yaw: 0 };
   const pRad = [
-    usedPose.x, usedPose.y, usedPose.z,
-    usedPose.roll*DEG2RAD, usedPose.pitch*DEG2RAD, usedPose.yaw*DEG2RAD
+    usedPose.x,
+    usedPose.y,
+    usedPose.z,
+    usedPose.roll * DEG2RAD,
+    usedPose.pitch * DEG2RAD,
+    usedPose.yaw * DEG2RAD,
   ];
 
   // Defensive geometry guards
   const { basePts, platLocal, legToPidx, l0, configType } = geom || {};
-  const isValid88 = Array.isArray(basePts) && basePts.length===8 && Array.isArray(platLocal) && platLocal.length===8 && Array.isArray(legToPidx) && legToPidx.length===8 && Array.isArray(l0) && l0.length===8;
-  const isValid66 = Array.isArray(basePts) && basePts.length===6 && Array.isArray(platLocal) && platLocal.length===6 && Array.isArray(legToPidx) && legToPidx.length===6 && Array.isArray(l0) && l0.length===6;
-  const isValid63r = Array.isArray(basePts) && basePts.length===6 && Array.isArray(platLocal) && platLocal.length===3 && Array.isArray(legToPidx) && legToPidx.length===6 && Array.isArray(l0) && l0.length===6;
-  const isValid63a = Array.isArray(basePts) && basePts.length===6 && Array.isArray(platLocal) && platLocal.length===3 && Array.isArray(legToPidx) && legToPidx.length===6 && Array.isArray(l0) && l0.length===6;
-  const isValid63 = Array.isArray(basePts) && basePts.length===6 && Array.isArray(platLocal) && platLocal.length===3 && Array.isArray(legToPidx) && legToPidx.length===6 && Array.isArray(l0) && l0.length===6;
-  const isValid44 = Array.isArray(basePts) && basePts.length===4 && Array.isArray(platLocal) && platLocal.length===4 && Array.isArray(legToPidx) && legToPidx.length===4 && Array.isArray(l0) && l0.length===4;
-  const isValid33 = Array.isArray(basePts) && basePts.length===3 && Array.isArray(platLocal) && platLocal.length===3 && Array.isArray(legToPidx) && legToPidx.length===3 && Array.isArray(l0) && l0.length===3;
-  const validGeom = isValid88 || isValid66 || isValid63r || isValid63a || isValid63 || isValid44 || isValid33;
+  const isValid88 =
+    Array.isArray(basePts) &&
+    basePts.length === 8 &&
+    Array.isArray(platLocal) &&
+    platLocal.length === 8 &&
+    Array.isArray(legToPidx) &&
+    legToPidx.length === 8 &&
+    Array.isArray(l0) &&
+    l0.length === 8;
+  const isValid66 =
+    Array.isArray(basePts) &&
+    basePts.length === 6 &&
+    Array.isArray(platLocal) &&
+    platLocal.length === 6 &&
+    Array.isArray(legToPidx) &&
+    legToPidx.length === 6 &&
+    Array.isArray(l0) &&
+    l0.length === 6;
+  const isValid63r =
+    Array.isArray(basePts) &&
+    basePts.length === 6 &&
+    Array.isArray(platLocal) &&
+    platLocal.length === 3 &&
+    Array.isArray(legToPidx) &&
+    legToPidx.length === 6 &&
+    Array.isArray(l0) &&
+    l0.length === 6;
+  const isValid63a =
+    Array.isArray(basePts) &&
+    basePts.length === 6 &&
+    Array.isArray(platLocal) &&
+    platLocal.length === 3 &&
+    Array.isArray(legToPidx) &&
+    legToPidx.length === 6 &&
+    Array.isArray(l0) &&
+    l0.length === 6;
+  const isValid63 =
+    Array.isArray(basePts) &&
+    basePts.length === 6 &&
+    Array.isArray(platLocal) &&
+    platLocal.length === 3 &&
+    Array.isArray(legToPidx) &&
+    legToPidx.length === 6 &&
+    Array.isArray(l0) &&
+    l0.length === 6;
+  const isValid44 =
+    Array.isArray(basePts) &&
+    basePts.length === 4 &&
+    Array.isArray(platLocal) &&
+    platLocal.length === 4 &&
+    Array.isArray(legToPidx) &&
+    legToPidx.length === 4 &&
+    Array.isArray(l0) &&
+    l0.length === 4;
+  const isValid33 =
+    Array.isArray(basePts) &&
+    basePts.length === 3 &&
+    Array.isArray(platLocal) &&
+    platLocal.length === 3 &&
+    Array.isArray(legToPidx) &&
+    legToPidx.length === 3 &&
+    Array.isArray(l0) &&
+    l0.length === 3;
+  const validGeom =
+    isValid88 || isValid66 || isValid63r || isValid63a || isValid63 || isValid44 || isValid33;
   if (!validGeom) return null;
 
-  const { P3, P6 } = useMemo(() => inverseKinematics({ basePts, platLocal, legToPidx, l0 }, pRad), [basePts, platLocal, legToPidx, l0, usedPose]);
+  const { P3, P6 } = useMemo(
+    () => inverseKinematics({ basePts, platLocal, legToPidx, l0 }, pRad),
+    [basePts, platLocal, legToPidx, l0, usedPose]
+  );
 
   // Create platform shape based on configuration
   const platformShape = useMemo(() => {
@@ -798,10 +896,10 @@ function StewartStage({ pose, anim, geom, onPose, visualizations, limits, viewMo
 
   // Ground ring for reference
   const baseRing = useMemo(() => {
-    const n = 64; 
+    const n = 64;
     // Calculate radius based on actual base points
     const r = Math.hypot(basePts[0][0], basePts[0][1]);
-    const arr = Array.from({ length: n+1 }, (_, i) => {
+    const arr = Array.from({ length: n + 1 }, (_, i) => {
       const th = (i / n) * 2 * Math.PI;
       return [r * Math.cos(th), r * Math.sin(th), 0];
     });
@@ -817,7 +915,7 @@ function StewartStage({ pose, anim, geom, onPose, visualizations, limits, viewMo
     <>
       {/* Camera Controller */}
       <CameraController viewMode={viewMode} />
-      
+
       {/* Helpers */}
       <CustomGrid size={400} divisions={20} visible={visualizations?.showGrid !== false} />
       <CoordinateAxes size={80} visible={visualizations?.showAxes !== false} />
@@ -830,7 +928,7 @@ function StewartStage({ pose, anim, geom, onPose, visualizations, limits, viewMo
       {/* Base ring & anchors */}
       <Line points={baseRing} color="#4f46e5" lineWidth={2} />
       {basePts.map((B, i) => (
-        <Sphere key={"b"+i} args={[2, 16, 16]} position={new THREE.Vector3(B[0], B[1], B[2])}>
+        <Sphere key={'b' + i} args={[2, 16, 16]} position={new THREE.Vector3(B[0], B[1], B[2])}>
           <meshStandardMaterial color="#4f46e5" />
         </Sphere>
       ))}
@@ -838,7 +936,7 @@ function StewartStage({ pose, anim, geom, onPose, visualizations, limits, viewMo
       {/* Platform shape & joints */}
       <Line points={platformShape} color="#10b981" lineWidth={2} />
       {P3.map((P, i) => (
-        <Sphere key={"p"+i} args={[2.5, 16, 16]} position={new THREE.Vector3(P[0], P[1], P[2])}>
+        <Sphere key={'p' + i} args={[2.5, 16, 16]} position={new THREE.Vector3(P[0], P[1], P[2])}>
           <meshStandardMaterial color="#10b981" />
         </Sphere>
       ))}
@@ -848,14 +946,17 @@ function StewartStage({ pose, anim, geom, onPose, visualizations, limits, viewMo
         <LegHeatmap geom={geom} ik={ikData} limits={limits} />
       ) : (
         basePts.map((B, i) => (
-          <Line key={i} points={toVec3([[B[0],B[1],B[2]], P6[i]])} color="#94a3b8" lineWidth={1.5} />
+          <Line
+            key={i}
+            points={toVec3([[B[0], B[1], B[2]], P6[i]])}
+            color="#94a3b8"
+            lineWidth={1.5}
+          />
         ))
       )}
 
       {/* Force/Torque Vectors */}
-      {visualizations?.showForces && (
-        <ForceVectors geom={geom} pose={pRad} ik={ikData} />
-      )}
+      {visualizations?.showForces && <ForceVectors geom={geom} pose={pRad} ik={ikData} />}
 
       <ambientLight intensity={0.7} />
       <directionalLight intensity={0.7} position={[200, 200, 300]} />
@@ -867,9 +968,16 @@ function StewartStage({ pose, anim, geom, onPose, visualizations, limits, viewMo
 // ------------------ Self-tests (kept + more) ------------------ //
 function runSelfTests() {
   const details = [];
-  let passed = 0, failed = 0;
-  const pass = (msg) => { details.push(`✅ ${msg}`); passed++; };
-  const fail = (msg) => { details.push(`❌ ${msg}`); failed++; };
+  let passed = 0,
+    failed = 0;
+  const pass = (msg) => {
+    details.push(`✅ ${msg}`);
+    passed++;
+  };
+  const fail = (msg) => {
+    details.push(`❌ ${msg}`);
+    failed++;
+  };
   const eps = 1e-6;
 
   // Test 1: Rotation matrix orthogonality (R*R^T = I)
@@ -881,110 +989,165 @@ function runSelfTests() {
       [R[0][2], R[1][2], R[2][2]],
     ]);
     const I = [
-      [1,0,0],
-      [0,1,0],
-      [0,0,1],
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
     ];
     const ok = Rt.every((row, i) => row.every((val, j) => Math.abs(val - I[i][j]) < eps));
-    ok ? pass("Rotation matrix is orthogonal") : fail("Rotation matrix is not orthogonal");
+    ok ? pass('Rotation matrix is orthogonal') : fail('Rotation matrix is not orthogonal');
   }
 
   // Test 2: Platform XY radius preserved under yaw rotation
   {
     const geom = getGeometry('6-3', { platRadius: 70 });
     const yaw = 0.9;
-    const P3 = platformWorldPts(geom.platLocal, [0,0,0, 0,0, yaw]);
-    const rads = P3.map(p => Math.hypot(p[0], p[1]));
-    const ok = rads.every(r => Math.abs(r - 70) < 1e-6);
-    ok ? pass("Yaw rotation preserves platform radial distance") : fail("Yaw rotation broke platform radius");
+    const P3 = platformWorldPts(geom.platLocal, [0, 0, 0, 0, 0, yaw]);
+    const rads = P3.map((p) => Math.hypot(p[0], p[1]));
+    const ok = rads.every((r) => Math.abs(r - 70) < 1e-6);
+    ok
+      ? pass('Yaw rotation preserves platform radial distance')
+      : fail('Yaw rotation broke platform radius');
   }
 
   // Test 3: Z translation sets P3.z ≈ z when roll/pitch=0
   {
     const geom = getGeometry('6-3');
     const z = 160;
-    const P3 = platformWorldPts(geom.platLocal, [0,0,z, 0,0, 0]);
-    const ok = P3.every(p => Math.abs(p[2] - z) < eps);
-    ok ? pass("Z translation applied to platform joints") : fail("Z translation not applied correctly");
+    const P3 = platformWorldPts(geom.platLocal, [0, 0, z, 0, 0, 0]);
+    const ok = P3.every((p) => Math.abs(p[2] - z) < eps);
+    ok
+      ? pass('Z translation applied to platform joints')
+      : fail('Z translation not applied correctly');
   }
 
   // Test 4: Pair symmetry at neutral pose (legs of each pair equal) - only for 6-3 config
   {
     const geom = getGeometry('6-3'); // Test specifically with 6-3 configuration
-    const ik = inverseKinematics(geom, [0,0,160, 0,0,0]);
+    const ik = inverseKinematics(geom, [0, 0, 160, 0, 0, 0]);
     const L = ik.lengthsAbs;
-    const ok = Math.abs(L[0]-L[1])<1e-6 && Math.abs(L[2]-L[3])<1e-6 && Math.abs(L[4]-L[5])<1e-6;
-    ok ? pass("Neutral pose: paired legs have equal lengths (6-3)") : fail("Pair symmetry failed at neutral pose (6-3)");
+    const ok =
+      Math.abs(L[0] - L[1]) < 1e-6 && Math.abs(L[2] - L[3]) < 1e-6 && Math.abs(L[4] - L[5]) < 1e-6;
+    ok
+      ? pass('Neutral pose: paired legs have equal lengths (6-3)')
+      : fail('Pair symmetry failed at neutral pose (6-3)');
   }
 
   // Test 5: Lengths are positive at nominal neutral pose
   {
     const geom = getGeometry('6-3');
-    const ik = inverseKinematics(geom, [0,0,160, 0,0,0]);
-    const ok = ik.lengthsAbs.every(v => v > 0);
-    ok ? pass("Neutral pose: all absolute lengths positive") : fail("Found non-positive absolute length");
+    const ik = inverseKinematics(geom, [0, 0, 160, 0, 0, 0]);
+    const ok = ik.lengthsAbs.every((v) => v > 0);
+    ok
+      ? pass('Neutral pose: all absolute lengths positive')
+      : fail('Found non-positive absolute length');
   }
 
   // Test 6 (NEW): IK returns arrays of correct sizes for 6-3 config
   {
     const geom = getGeometry('6-3'); // Test specifically with 6-3 configuration
-    const ik = inverseKinematics(geom, [0,0,160, 0,0,0]);
-    const ok = Array.isArray(ik.P3) && ik.P3.length===3 && Array.isArray(ik.P6) && ik.P6.length===6 && Array.isArray(ik.lengthsAbs) && ik.lengthsAbs.length===6;
-    ok ? pass("IK shapes: P3[3], P6[6], lengths[6] (6-3)") : fail("IK shapes incorrect (6-3)");
+    const ik = inverseKinematics(geom, [0, 0, 160, 0, 0, 0]);
+    const ok =
+      Array.isArray(ik.P3) &&
+      ik.P3.length === 3 &&
+      Array.isArray(ik.P6) &&
+      ik.P6.length === 6 &&
+      Array.isArray(ik.lengthsAbs) &&
+      ik.lengthsAbs.length === 6;
+    ok ? pass('IK shapes: P3[3], P6[6], lengths[6] (6-3)') : fail('IK shapes incorrect (6-3)');
   }
-  
+
   // Test 7: 6-6 configuration works
   {
     const geom = getGeometry('6-6');
-    const ik = inverseKinematics(geom, [0,0,160, 0,0,0]);
-    const ok = Array.isArray(ik.P3) && ik.P3.length===6 && Array.isArray(ik.P6) && ik.P6.length===6 && Array.isArray(ik.lengthsAbs) && ik.lengthsAbs.length===6;
-    ok ? pass("6-6 configuration works correctly") : fail("6-6 configuration failed");
+    const ik = inverseKinematics(geom, [0, 0, 160, 0, 0, 0]);
+    const ok =
+      Array.isArray(ik.P3) &&
+      ik.P3.length === 6 &&
+      Array.isArray(ik.P6) &&
+      ik.P6.length === 6 &&
+      Array.isArray(ik.lengthsAbs) &&
+      ik.lengthsAbs.length === 6;
+    ok ? pass('6-6 configuration works correctly') : fail('6-6 configuration failed');
   }
-  
+
   // Test 8: 3-3 configuration works
   {
     const geom = getGeometry('3-3');
-    const ik = inverseKinematics(geom, [0,0,160, 0,0,0]);
-    const ok = Array.isArray(ik.P3) && ik.P3.length===3 && Array.isArray(ik.P6) && ik.P6.length===3 && Array.isArray(ik.lengthsAbs) && ik.lengthsAbs.length===3;
-    ok ? pass("3-3 configuration works correctly") : fail("3-3 configuration failed");
+    const ik = inverseKinematics(geom, [0, 0, 160, 0, 0, 0]);
+    const ok =
+      Array.isArray(ik.P3) &&
+      ik.P3.length === 3 &&
+      Array.isArray(ik.P6) &&
+      ik.P6.length === 3 &&
+      Array.isArray(ik.lengthsAbs) &&
+      ik.lengthsAbs.length === 3;
+    ok ? pass('3-3 configuration works correctly') : fail('3-3 configuration failed');
   }
-  
+
   // Test 9: 4-4 configuration works
   {
     const geom = getGeometry('4-4');
-    const ik = inverseKinematics(geom, [0,0,160, 0,0,0]);
-    const ok = Array.isArray(ik.P3) && ik.P3.length===4 && Array.isArray(ik.P6) && ik.P6.length===4 && Array.isArray(ik.lengthsAbs) && ik.lengthsAbs.length===4;
-    ok ? pass("4-4 configuration works correctly") : fail("4-4 configuration failed");
+    const ik = inverseKinematics(geom, [0, 0, 160, 0, 0, 0]);
+    const ok =
+      Array.isArray(ik.P3) &&
+      ik.P3.length === 4 &&
+      Array.isArray(ik.P6) &&
+      ik.P6.length === 4 &&
+      Array.isArray(ik.lengthsAbs) &&
+      ik.lengthsAbs.length === 4;
+    ok ? pass('4-4 configuration works correctly') : fail('4-4 configuration failed');
   }
-  
+
   // Test 10: 8-8 configuration works
   {
     const geom = getGeometry('8-8');
-    const ik = inverseKinematics(geom, [0,0,160, 0,0,0]);
-    const ok = Array.isArray(ik.P3) && ik.P3.length===8 && Array.isArray(ik.P6) && ik.P6.length===8 && Array.isArray(ik.lengthsAbs) && ik.lengthsAbs.length===8;
-    ok ? pass("8-8 configuration works correctly") : fail("8-8 configuration failed");
+    const ik = inverseKinematics(geom, [0, 0, 160, 0, 0, 0]);
+    const ok =
+      Array.isArray(ik.P3) &&
+      ik.P3.length === 8 &&
+      Array.isArray(ik.P6) &&
+      ik.P6.length === 8 &&
+      Array.isArray(ik.lengthsAbs) &&
+      ik.lengthsAbs.length === 8;
+    ok ? pass('8-8 configuration works correctly') : fail('8-8 configuration failed');
   }
-  
+
   // Test 11: 6-3 asymmetric configuration works
   {
     const geom = getGeometry('6-3-asymmetric');
-    const ik = inverseKinematics(geom, [0,0,160, 0,0,0]);
-    const ok = Array.isArray(ik.P3) && ik.P3.length===3 && Array.isArray(ik.P6) && ik.P6.length===6 && Array.isArray(ik.lengthsAbs) && ik.lengthsAbs.length===6;
-    ok ? pass("6-3 asymmetric configuration works correctly") : fail("6-3 asymmetric configuration failed");
+    const ik = inverseKinematics(geom, [0, 0, 160, 0, 0, 0]);
+    const ok =
+      Array.isArray(ik.P3) &&
+      ik.P3.length === 3 &&
+      Array.isArray(ik.P6) &&
+      ik.P6.length === 6 &&
+      Array.isArray(ik.lengthsAbs) &&
+      ik.lengthsAbs.length === 6;
+    ok
+      ? pass('6-3 asymmetric configuration works correctly')
+      : fail('6-3 asymmetric configuration failed');
   }
-  
+
   // Test 12: 6-3 redundant configuration works
   {
     const geom = getGeometry('6-3-redundant');
-    const ik = inverseKinematics(geom, [0,0,160, 0,0,0]);
-    const ok = Array.isArray(ik.P3) && ik.P3.length===3 && Array.isArray(ik.P6) && ik.P6.length===6 && Array.isArray(ik.lengthsAbs) && ik.lengthsAbs.length===6;
-    ok ? pass("6-3 redundant configuration works correctly") : fail("6-3 redundant configuration failed");
+    const ik = inverseKinematics(geom, [0, 0, 160, 0, 0, 0]);
+    const ok =
+      Array.isArray(ik.P3) &&
+      ik.P3.length === 3 &&
+      Array.isArray(ik.P6) &&
+      ik.P6.length === 6 &&
+      Array.isArray(ik.lengthsAbs) &&
+      ik.lengthsAbs.length === 6;
+    ok
+      ? pass('6-3 redundant configuration works correctly')
+      : fail('6-3 redundant configuration failed');
   }
 
   const summary = { passed, failed, details };
   /* eslint-disable no-console */
-  console.group("Stewart 6-3 Self-Tests");
-  details.forEach(d => console.log(d));
+  console.group('Stewart 6-3 Self-Tests');
+  details.forEach((d) => console.log(d));
   console.log(`Summary: ${passed} passed, ${failed} failed`);
   console.groupEnd();
   /* eslint-enable no-console */
@@ -997,25 +1160,25 @@ export default function App() {
   const [geometryParams, setGeometryParams] = useState({
     baseRadius: 120,
     platRadius: 70,
-    l0: 150
+    l0: 150,
   });
-  
+
   // Validate geometry parameters
   const validatedParams = useMemo(() => {
     let { baseRadius, platRadius, l0 } = geometryParams;
-    
+
     // Ensure platform is not larger than base
     if (platRadius >= baseRadius) {
       platRadius = baseRadius * 0.8; // Set to 80% of base radius
     }
-    
+
     // Ensure positive values
     baseRadius = Math.max(10, baseRadius);
     platRadius = Math.max(10, platRadius);
     l0 = Math.max(10, l0);
-    
+
     // Apply configuration-specific constraints
-    switch(configType) {
+    switch (configType) {
       case '8-8':
       case '6-6':
       case '4-4':
@@ -1036,11 +1199,14 @@ export default function App() {
       default:
         break;
     }
-    
+
     return { baseRadius, platRadius, l0 };
   }, [geometryParams, configType]);
-  
-  const geom = useMemo(() => getGeometry(configType, validatedParams), [configType, validatedParams]);
+
+  const geom = useMemo(
+    () => getGeometry(configType, validatedParams),
+    [configType, validatedParams]
+  );
   const [pose, setPose] = useState(() => ({ x: 0, y: 0, z: 160, roll: 0, pitch: 0, yaw: 0 }));
   const [limits, setLimits] = useState({ lminAbs: 140, lmaxAbs: 220 });
   const [anim, setAnim] = useState(false);
@@ -1051,11 +1217,11 @@ export default function App() {
     showForces: false,
     showGrid: true,
     showAxes: true,
-    showMeasurements: false
+    showMeasurements: false,
   });
   const [viewMode, setViewMode] = useState('perspective'); // perspective, top, side, front
   const tests = useMemo(() => runSelfTests(), []);
-  
+
   // Preset poses
   const presetPoses = {
     home: { x: 0, y: 0, z: 160, roll: 0, pitch: 0, yaw: 0 },
@@ -1066,71 +1232,92 @@ export default function App() {
     tiltX: { x: 0, y: 0, z: 160, roll: 8, pitch: 0, yaw: 0 },
     tiltY: { x: 0, y: 0, z: 160, roll: 0, pitch: 8, yaw: 0 },
     rotate: { x: 0, y: 0, z: 160, roll: 0, pitch: 0, yaw: 15 },
-    combined: { x: 20, y: 20, z: 180, roll: 5, pitch: 5, yaw: 10 }
+    combined: { x: 20, y: 20, z: 180, roll: 5, pitch: 5, yaw: 10 },
   };
 
   // Adjust sliders based on configuration
   const sliders = [
-    { key: "x", min: -50, max: 50, step: 0.5, label: "X (mm)" },
-    { key: "y", min: -50, max: 50, step: 0.5, label: "Y (mm)" },
-    { key: "z", min: 120, max: 220, step: 0.5, label: "Z (mm)" },
-    { key: "roll", min: -10, max: 10, step: 0.1, label: "Roll (deg)" },
-    { key: "pitch", min: -10, max: 10, step: 0.1, label: "Pitch (deg)" },
-    { key: "yaw", min: -20, max: 20, step: 0.1, label: "Yaw (deg)" },
+    { key: 'x', min: -50, max: 50, step: 0.5, label: 'X (mm)' },
+    { key: 'y', min: -50, max: 50, step: 0.5, label: 'Y (mm)' },
+    { key: 'z', min: 120, max: 220, step: 0.5, label: 'Z (mm)' },
+    { key: 'roll', min: -10, max: 10, step: 0.1, label: 'Roll (deg)' },
+    { key: 'pitch', min: -10, max: 10, step: 0.1, label: 'Pitch (deg)' },
+    { key: 'yaw', min: -20, max: 20, step: 0.1, label: 'Yaw (deg)' },
   ];
 
   // Reset pose when configuration changes
   useEffect(() => {
     setPose({ x: 0, y: 0, z: 160, roll: 0, pitch: 0, yaw: 0 });
   }, [configType]);
-  
+
   // Derived IK values for the table (standard React hook outside Canvas)
   const ik = useMemo(() => {
-    const p = [pose.x, pose.y, pose.z, pose.roll*DEG2RAD, pose.pitch*DEG2RAD, pose.yaw*DEG2RAD];
+    const p = [
+      pose.x,
+      pose.y,
+      pose.z,
+      pose.roll * DEG2RAD,
+      pose.pitch * DEG2RAD,
+      pose.yaw * DEG2RAD,
+    ];
     return inverseKinematics({ ...geom }, p);
   }, [geom, pose]);
 
   // Validate geometry and kinematics
   const geometryValidation = useMemo(() => {
-    if (!geom) return { valid: false, message: "Invalid geometry" };
-    
+    if (!geom) return { valid: false, message: 'Invalid geometry' };
+
     const { basePts, platLocal, l0 } = geom;
-    const p = [pose.x, pose.y, pose.z, pose.roll*DEG2RAD, pose.pitch*DEG2RAD, pose.yaw*DEG2RAD];
+    const p = [
+      pose.x,
+      pose.y,
+      pose.z,
+      pose.roll * DEG2RAD,
+      pose.pitch * DEG2RAD,
+      pose.yaw * DEG2RAD,
+    ];
     const P3 = platformWorldPts(platLocal, p);
-    
+
     // Check platform joint spacing
     const platformSpacing = validatePlatformJointSpacing(P3);
     if (!platformSpacing.valid) return platformSpacing;
-    
+
     // Check base joint spacing
     const baseSpacing = validateBaseJointSpacing(basePts);
     if (!baseSpacing.valid) return baseSpacing;
-    
+
     // Check leg lengths
     const legValidation = validateLegLengths(ik, l0[0], limits);
     if (!legValidation.valid) return legValidation;
-    
-    return { valid: true, message: "All validations passed" };
+
+    return { valid: true, message: 'All validations passed' };
   }, [geom, pose, ik, limits]);
-  
+
   // Workspace analysis
   const workspaceAnalysis = useMemo(() => {
-    const p = [pose.x, pose.y, pose.z, pose.roll*DEG2RAD, pose.pitch*DEG2RAD, pose.yaw*DEG2RAD];
-    
+    const p = [
+      pose.x,
+      pose.y,
+      pose.z,
+      pose.roll * DEG2RAD,
+      pose.pitch * DEG2RAD,
+      pose.yaw * DEG2RAD,
+    ];
+
     const singularity = detectSingularity(geom, p);
     const collision = detectCollisions(geom, p);
     const utilization = calculateWorkspaceUtilization(geom, p, limits);
     const reachable = isPoseReachable(geom, p, limits);
-    
+
     return {
       singularity,
       collision,
       utilization,
-      reachable
+      reachable,
     };
   }, [geom, pose, limits]);
-  
-  const outOfRange = ik.lengthsAbs.some(L => L < limits.lminAbs || L > limits.lmaxAbs);
+
+  const outOfRange = ik.lengthsAbs.some((L) => L < limits.lminAbs || L > limits.lmaxAbs);
 
   return (
     <div className="w-full h-screen bg-gray-900 text-white grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
@@ -1139,43 +1326,43 @@ export default function App() {
         <div className="rounded-2xl p-4 shadow bg-gray-800 border border-gray-700">
           <h2 className="text-lg font-semibold mb-2">Configuration</h2>
           <div className="grid grid-cols-2 gap-2">
-            <button 
+            <button
               className={`px-3 py-2 rounded-lg transition-colors ${configType === '8-8' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}
               onClick={() => setConfigType('8-8')}
             >
               8-8 Platform
             </button>
-            <button 
+            <button
               className={`px-3 py-2 rounded-lg transition-colors ${configType === '6-6' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}
               onClick={() => setConfigType('6-6')}
             >
               6-6 Platform
             </button>
-            <button 
+            <button
               className={`px-3 py-2 rounded-lg transition-colors ${configType === '6-3-redundant' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}
               onClick={() => setConfigType('6-3-redundant')}
             >
               6-3 Redundant
             </button>
-            <button 
+            <button
               className={`px-3 py-2 rounded-lg transition-colors ${configType === '6-3-asymmetric' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}
               onClick={() => setConfigType('6-3-asymmetric')}
             >
               6-3 Asymmetric
             </button>
-            <button 
+            <button
               className={`px-3 py-2 rounded-lg transition-colors ${configType === '6-3' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}
               onClick={() => setConfigType('6-3')}
             >
               6-3 Platform
             </button>
-            <button 
+            <button
               className={`px-3 py-2 rounded-lg transition-colors ${configType === '4-4' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}
               onClick={() => setConfigType('4-4')}
             >
               4-4 Platform
             </button>
-            <button 
+            <button
               className={`px-3 py-2 rounded-lg transition-colors ${configType === '3-3' ? 'bg-indigo-600 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}
               onClick={() => setConfigType('3-3')}
             >
@@ -1183,24 +1370,34 @@ export default function App() {
             </button>
           </div>
           <div className="mt-3 text-sm text-gray-300">
-            <p>{configType === '8-8' ? '8 base points, 8 platform points' : 
-              configType === '6-6' ? '6 base points, 6 platform points' : 
-              configType === '6-3-redundant' ? '6 base points, 3 platform points, 9 legs (redundant)' : 
-              configType === '6-3-asymmetric' ? '6 base points, 3 platform points, asymmetric pairing' : 
-              configType === '6-3' ? '6 base points, 3 platform points (standard)' : 
-              configType === '4-4' ? '4 base points, 4 platform points' : 
-              '3 base points, 3 platform points'}</p>
+            <p>
+              {configType === '8-8'
+                ? '8 base points, 8 platform points'
+                : configType === '6-6'
+                  ? '6 base points, 6 platform points'
+                  : configType === '6-3-redundant'
+                    ? '6 base points, 3 platform points, 9 legs (redundant)'
+                    : configType === '6-3-asymmetric'
+                      ? '6 base points, 3 platform points, asymmetric pairing'
+                      : configType === '6-3'
+                        ? '6 base points, 3 platform points (standard)'
+                        : configType === '4-4'
+                          ? '4 base points, 4 platform points'
+                          : '3 base points, 3 platform points'}
+            </p>
           </div>
         </div>
-        
+
         <div className="rounded-2xl p-4 shadow bg-gray-800 border border-gray-700">
           <div className="flex gap-2 items-center">
             <button
-              onClick={() => setAnim(a => !a)}
+              onClick={() => setAnim((a) => !a)}
               className={`px-3 py-1 rounded-xl border border-gray-600 hover:bg-gray-700 transition-colors`}
-            >{anim ? "Stop" : "Animate"}</button>
+            >
+              {anim ? 'Stop' : 'Animate'}
+            </button>
           </div>
-            
+
           {/* Validation warnings */}
           {!geometryValidation.valid && (
             <div className="mt-3 p-2 rounded bg-red-900/30 border border-red-700 text-red-200 text-sm">
@@ -1208,14 +1405,19 @@ export default function App() {
             </div>
           )}
         </div>
-        
+
         <div className="rounded-2xl p-4 shadow bg-gray-800 border border-gray-700">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold">Pose</h2>
-            <button className="px-3 py-1 rounded-xl border border-gray-600 hover:bg-gray-700 transition-colors" onClick={() => setPose({ x:0, y:0, z:160, roll:0, pitch:0, yaw:0 })}>Reset</button>
+            <button
+              className="px-3 py-1 rounded-xl border border-gray-600 hover:bg-gray-700 transition-colors"
+              onClick={() => setPose({ x: 0, y: 0, z: 160, roll: 0, pitch: 0, yaw: 0 })}
+            >
+              Reset
+            </button>
           </div>
           <div className="space-y-3">
-            {sliders.map(s => (
+            {sliders.map((s) => (
               <div key={s.key} className="grid grid-cols-7 gap-2 items-center">
                 <label className="col-span-3 text-sm opacity-80">{s.label}</label>
                 <input
@@ -1224,49 +1426,85 @@ export default function App() {
                   max={s.max}
                   step={s.step}
                   value={pose[s.key]}
-                  onChange={(e) => setPose(p => ({ ...p, [s.key]: parseFloat(e.target.value) }))}
+                  onChange={(e) => setPose((p) => ({ ...p, [s.key]: parseFloat(e.target.value) }))}
                   className="col-span-3"
                 />
                 <div className="text-right text-sm tabular-nums">{pose[s.key].toFixed(2)}</div>
               </div>
             ))}
           </div>
-          
+
           <div className="grid grid-cols-2 gap-3 items-center mb-4">
             <label className="text-sm opacity-80">Base Radius (mm)</label>
-            <input type="number" value={geometryParams.baseRadius}
-              onChange={(e)=>setGeometryParams(p=>({...p,baseRadius:Math.max(10, parseFloat(e.target.value) || 10)}))}
-              className="px-2 py-1 rounded bg-gray-700 border border-gray-600" 
-              min="10" />
+            <input
+              type="number"
+              value={geometryParams.baseRadius}
+              onChange={(e) =>
+                setGeometryParams((p) => ({
+                  ...p,
+                  baseRadius: Math.max(10, parseFloat(e.target.value) || 10),
+                }))
+              }
+              className="px-2 py-1 rounded bg-gray-700 border border-gray-600"
+              min="10"
+            />
             <label className="text-sm opacity-80">Platform Radius (mm)</label>
-            <input type="number" value={geometryParams.platRadius}
-              onChange={(e)=>setGeometryParams(p=>({...p,platRadius:Math.max(10, parseFloat(e.target.value) || 10)}))}
-              className="px-2 py-1 rounded bg-gray-700 border border-gray-600" 
-              min="10" />
+            <input
+              type="number"
+              value={geometryParams.platRadius}
+              onChange={(e) =>
+                setGeometryParams((p) => ({
+                  ...p,
+                  platRadius: Math.max(10, parseFloat(e.target.value) || 10),
+                }))
+              }
+              className="px-2 py-1 rounded bg-gray-700 border border-gray-600"
+              min="10"
+            />
             <label className="text-sm opacity-80">Nominal Leg Length (mm)</label>
-            <input type="number" value={geometryParams.l0}
-              onChange={(e)=>setGeometryParams(p=>({...p,l0:Math.max(10, parseFloat(e.target.value) || 10)}))}
-              className="px-2 py-1 rounded bg-gray-700 border border-gray-600" 
-              min="10" />
+            <input
+              type="number"
+              value={geometryParams.l0}
+              onChange={(e) =>
+                setGeometryParams((p) => ({
+                  ...p,
+                  l0: Math.max(10, parseFloat(e.target.value) || 10),
+                }))
+              }
+              className="px-2 py-1 rounded bg-gray-700 border border-gray-600"
+              min="10"
+            />
           </div>
-          
+
           <h2 className="text-lg font-semibold mb-2">Leg Length Limits</h2>
           <div className="grid grid-cols-2 gap-3 items-center">
             <label className="text-sm opacity-80">Min abs length (mm)</label>
-            <input type="number" value={limits.lminAbs}
-              onChange={(e)=>setLimits(l=>({...l,lminAbs:parseFloat(e.target.value)}))}
-              className="px-2 py-1 rounded bg-gray-700 border border-gray-600" />
+            <input
+              type="number"
+              value={limits.lminAbs}
+              onChange={(e) => setLimits((l) => ({ ...l, lminAbs: parseFloat(e.target.value) }))}
+              className="px-2 py-1 rounded bg-gray-700 border border-gray-600"
+            />
             <label className="text-sm opacity-80">Max abs length (mm)</label>
-            <input type="number" value={limits.lmaxAbs}
-              onChange={(e)=>setLimits(l=>({...l,lmaxAbs:parseFloat(e.target.value)}))}
-              className="px-2 py-1 rounded bg-gray-700 border border-gray-600" />
+            <input
+              type="number"
+              value={limits.lmaxAbs}
+              onChange={(e) => setLimits((l) => ({ ...l, lmaxAbs: parseFloat(e.target.value) }))}
+              className="px-2 py-1 rounded bg-gray-700 border border-gray-600"
+            />
           </div>
         </div>
 
-        <div className={`rounded-2xl p-4 shadow border ${outOfRange ? "border-red-500/40 bg-red-500/10" : "border-gray-700 bg-gray-800"}`}>
+        <div
+          className={`rounded-2xl p-4 shadow border ${outOfRange ? 'border-red-500/40 bg-red-500/10' : 'border-gray-700 bg-gray-800'}`}
+        >
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Leg Lengths</h2>
-            {outOfRange && <span className="text-xs px-2 py-1 rounded-xl bg-red-500/30 border border-red-500/50">Out of range</span>}
+            {outOfRange && (
+              <span className="text-xs px-2 py-1 rounded-xl bg-red-500/30 border border-red-500/50">
+                Out of range
+              </span>
+            )}
           </div>
           <table className="w-full text-sm mt-2">
             <thead className="opacity-70">
@@ -1278,7 +1516,7 @@ export default function App() {
               </tr>
             </thead>
             <tbody>
-              {ik.lengthsAbs.map((L,i)=>{
+              {ik.lengthsAbs.map((L, i) => {
                 const ext = L - geom.l0[i];
                 const ok = L >= limits.lminAbs && L <= limits.lmaxAbs;
                 return (
@@ -1286,7 +1524,7 @@ export default function App() {
                     <td>#{i}</td>
                     <td className="text-right tabular-nums">{L.toFixed(2)}</td>
                     <td className="text-right tabular-nums">{ext.toFixed(2)}</td>
-                    <td className="text-center">{ok ? "✓" : "✕"}</td>
+                    <td className="text-center">{ok ? '✓' : '✕'}</td>
                   </tr>
                 );
               })}
@@ -1298,15 +1536,60 @@ export default function App() {
         <div className="rounded-2xl p-4 shadow bg-gray-800 border border-gray-700">
           <h2 className="text-lg font-semibold mb-2">Preset Poses</h2>
           <div className="grid grid-cols-3 gap-2">
-            <button onClick={() => setPose(presetPoses.home)} className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600">Home</button>
-            <button onClick={() => setPose(presetPoses.maxX)} className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600">Max X</button>
-            <button onClick={() => setPose(presetPoses.maxY)} className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600">Max Y</button>
-            <button onClick={() => setPose(presetPoses.maxZ)} className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600">Max Z</button>
-            <button onClick={() => setPose(presetPoses.minZ)} className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600">Min Z</button>
-            <button onClick={() => setPose(presetPoses.tiltX)} className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600">Tilt X</button>
-            <button onClick={() => setPose(presetPoses.tiltY)} className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600">Tilt Y</button>
-            <button onClick={() => setPose(presetPoses.rotate)} className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600">Rotate</button>
-            <button onClick={() => setPose(presetPoses.combined)} className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600">Combined</button>
+            <button
+              onClick={() => setPose(presetPoses.home)}
+              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+            >
+              Home
+            </button>
+            <button
+              onClick={() => setPose(presetPoses.maxX)}
+              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+            >
+              Max X
+            </button>
+            <button
+              onClick={() => setPose(presetPoses.maxY)}
+              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+            >
+              Max Y
+            </button>
+            <button
+              onClick={() => setPose(presetPoses.maxZ)}
+              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+            >
+              Max Z
+            </button>
+            <button
+              onClick={() => setPose(presetPoses.minZ)}
+              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+            >
+              Min Z
+            </button>
+            <button
+              onClick={() => setPose(presetPoses.tiltX)}
+              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+            >
+              Tilt X
+            </button>
+            <button
+              onClick={() => setPose(presetPoses.tiltY)}
+              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+            >
+              Tilt Y
+            </button>
+            <button
+              onClick={() => setPose(presetPoses.rotate)}
+              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+            >
+              Rotate
+            </button>
+            <button
+              onClick={() => setPose(presetPoses.combined)}
+              className="px-2 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600 border border-gray-600"
+            >
+              Combined
+            </button>
           </div>
         </div>
 
@@ -1317,48 +1600,62 @@ export default function App() {
             {ik.jointAngles.map((angle, i) => (
               <div key={i} className="flex flex-col items-center p-2 rounded bg-gray-700">
                 <span className="opacity-70">Leg {i}</span>
-                <span className={`font-bold ${angle > 60 ? 'text-red-400' : angle > 45 ? 'text-yellow-400' : 'text-green-400'}`}>
+                <span
+                  className={`font-bold ${angle > 60 ? 'text-red-400' : angle > 45 ? 'text-yellow-400' : 'text-green-400'}`}
+                >
                   {angle.toFixed(1)}°
                 </span>
               </div>
             ))}
           </div>
           <div className="mt-2 text-xs opacity-70">
-            <span className="text-green-400">●</span> Good (&lt;45°) 
+            <span className="text-green-400">●</span> Good (&lt;45°)
             <span className="text-yellow-400 ml-2">●</span> Warning (45-60°)
             <span className="text-red-400 ml-2">●</span> Critical (&gt;60°)
           </div>
         </div>
 
         {/* Workspace Analysis */}
-        <div className={`rounded-2xl p-4 shadow border ${workspaceAnalysis.singularity.isSingular || workspaceAnalysis.collision.hasCollision ? "border-red-500/40 bg-red-500/10" : "border-gray-700 bg-gray-800"}`}>
+        <div
+          className={`rounded-2xl p-4 shadow border ${workspaceAnalysis.singularity.isSingular || workspaceAnalysis.collision.hasCollision ? 'border-red-500/40 bg-red-500/10' : 'border-gray-700 bg-gray-800'}`}
+        >
           <h2 className="text-lg font-semibold mb-2">Workspace Analysis</h2>
-          
+
           <div className="space-y-2 text-sm">
             {/* Reachability */}
             <div className="flex items-center justify-between p-2 rounded bg-gray-700/50">
               <span>Reachable:</span>
-              <span className={workspaceAnalysis.reachable ? "text-green-400" : "text-red-400"}>
-                {workspaceAnalysis.reachable ? "✓ Yes" : "✕ No"}
+              <span className={workspaceAnalysis.reachable ? 'text-green-400' : 'text-red-400'}>
+                {workspaceAnalysis.reachable ? '✓ Yes' : '✕ No'}
               </span>
             </div>
 
             {/* Singularity */}
             <div className="flex items-center justify-between p-2 rounded bg-gray-700/50">
               <span>Singularity:</span>
-              <span className={workspaceAnalysis.singularity.isSingular ? "text-red-400" : "text-green-400"}>
-                {workspaceAnalysis.singularity.isSingular ? "⚠ Detected" : "✓ None"}
+              <span
+                className={
+                  workspaceAnalysis.singularity.isSingular ? 'text-red-400' : 'text-green-400'
+                }
+              >
+                {workspaceAnalysis.singularity.isSingular ? '⚠ Detected' : '✓ None'}
               </span>
             </div>
             {workspaceAnalysis.singularity.isSingular && (
-              <div className="text-xs text-red-300 pl-2">{workspaceAnalysis.singularity.message}</div>
+              <div className="text-xs text-red-300 pl-2">
+                {workspaceAnalysis.singularity.message}
+              </div>
             )}
 
             {/* Collision */}
             <div className="flex items-center justify-between p-2 rounded bg-gray-700/50">
               <span>Collision:</span>
-              <span className={workspaceAnalysis.collision.hasCollision ? "text-red-400" : "text-green-400"}>
-                {workspaceAnalysis.collision.hasCollision ? "⚠ Detected" : "✓ None"}
+              <span
+                className={
+                  workspaceAnalysis.collision.hasCollision ? 'text-red-400' : 'text-green-400'
+                }
+              >
+                {workspaceAnalysis.collision.hasCollision ? '⚠ Detected' : '✓ None'}
               </span>
             </div>
             {workspaceAnalysis.collision.hasCollision && (
@@ -1369,20 +1666,25 @@ export default function App() {
             <div className="p-2 rounded bg-gray-700/50">
               <div className="flex items-center justify-between mb-1">
                 <span>Workspace Utilization:</span>
-                <span className="font-bold">{workspaceAnalysis.utilization.average.toFixed(1)}%</span>
+                <span className="font-bold">
+                  {workspaceAnalysis.utilization.average.toFixed(1)}%
+                </span>
               </div>
               <div className="w-full bg-gray-600 rounded-full h-2">
-                <div 
+                <div
                   className={`h-2 rounded-full ${
-                    workspaceAnalysis.utilization.average > 80 ? 'bg-red-500' : 
-                    workspaceAnalysis.utilization.average > 60 ? 'bg-yellow-500' : 
-                    'bg-green-500'
+                    workspaceAnalysis.utilization.average > 80
+                      ? 'bg-red-500'
+                      : workspaceAnalysis.utilization.average > 60
+                        ? 'bg-yellow-500'
+                        : 'bg-green-500'
                   }`}
                   style={{ width: `${Math.min(100, workspaceAnalysis.utilization.average)}%` }}
                 ></div>
               </div>
               <div className="text-xs opacity-70 mt-1">
-                Min: {workspaceAnalysis.utilization.min.toFixed(1)}% | Max: {workspaceAnalysis.utilization.max.toFixed(1)}%
+                Min: {workspaceAnalysis.utilization.min.toFixed(1)}% | Max:{' '}
+                {workspaceAnalysis.utilization.max.toFixed(1)}%
               </div>
             </div>
           </div>
@@ -1391,7 +1693,7 @@ export default function App() {
         {/* Advanced Visualizations */}
         <div className="rounded-2xl p-4 shadow bg-gray-800 border border-gray-700">
           <h2 className="text-lg font-semibold mb-3">Advanced Visualizations</h2>
-          
+
           <div className="space-y-2">
             {/* Workspace Envelope */}
             <label className="flex items-center justify-between cursor-pointer p-2 rounded hover:bg-gray-700/50">
@@ -1399,51 +1701,55 @@ export default function App() {
               <input
                 type="checkbox"
                 checked={visualizations.showWorkspaceEnvelope}
-                onChange={(e) => setVisualizations(v => ({...v, showWorkspaceEnvelope: e.target.checked}))}
+                onChange={(e) =>
+                  setVisualizations((v) => ({ ...v, showWorkspaceEnvelope: e.target.checked }))
+                }
                 className="w-4 h-4"
               />
             </label>
-            
+
             {/* Leg Heatmap */}
             <label className="flex items-center justify-between cursor-pointer p-2 rounded hover:bg-gray-700/50">
               <span className="text-sm">Leg Length Heatmap</span>
               <input
                 type="checkbox"
                 checked={visualizations.showHeatmap}
-                onChange={(e) => setVisualizations(v => ({...v, showHeatmap: e.target.checked}))}
+                onChange={(e) =>
+                  setVisualizations((v) => ({ ...v, showHeatmap: e.target.checked }))
+                }
                 className="w-4 h-4"
               />
             </label>
-            
+
             {/* Force Vectors */}
             <label className="flex items-center justify-between cursor-pointer p-2 rounded hover:bg-gray-700/50">
               <span className="text-sm">Force/Torque Vectors</span>
               <input
                 type="checkbox"
                 checked={visualizations.showForces}
-                onChange={(e) => setVisualizations(v => ({...v, showForces: e.target.checked}))}
+                onChange={(e) => setVisualizations((v) => ({ ...v, showForces: e.target.checked }))}
                 className="w-4 h-4"
               />
             </label>
-            
+
             {/* Grid */}
             <label className="flex items-center justify-between cursor-pointer p-2 rounded hover:bg-gray-700/50">
               <span className="text-sm">Grid</span>
               <input
                 type="checkbox"
                 checked={visualizations.showGrid}
-                onChange={(e) => setVisualizations(v => ({...v, showGrid: e.target.checked}))}
+                onChange={(e) => setVisualizations((v) => ({ ...v, showGrid: e.target.checked }))}
                 className="w-4 h-4"
               />
             </label>
-            
+
             {/* Axes */}
             <label className="flex items-center justify-between cursor-pointer p-2 rounded hover:bg-gray-700/50">
               <span className="text-sm">Coordinate Axes</span>
               <input
                 type="checkbox"
                 checked={visualizations.showAxes}
-                onChange={(e) => setVisualizations(v => ({...v, showAxes: e.target.checked}))}
+                onChange={(e) => setVisualizations((v) => ({ ...v, showAxes: e.target.checked }))}
                 className="w-4 h-4"
               />
             </label>
@@ -1452,25 +1758,25 @@ export default function App() {
           <div className="mt-4 pt-3 border-t border-gray-700">
             <h3 className="text-sm font-semibold mb-2">View Mode</h3>
             <div className="grid grid-cols-2 gap-2">
-              <button 
+              <button
                 onClick={() => setViewMode('perspective')}
                 className={`px-2 py-1 text-xs rounded border ${viewMode === 'perspective' ? 'bg-blue-600 border-blue-500' : 'bg-gray-700 border-gray-600 hover:bg-gray-600'}`}
               >
                 Perspective
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode('top')}
                 className={`px-2 py-1 text-xs rounded border ${viewMode === 'top' ? 'bg-blue-600 border-blue-500' : 'bg-gray-700 border-gray-600 hover:bg-gray-600'}`}
               >
                 Top View
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode('side')}
                 className={`px-2 py-1 text-xs rounded border ${viewMode === 'side' ? 'bg-blue-600 border-blue-500' : 'bg-gray-700 border-gray-600 hover:bg-gray-600'}`}
               >
                 Side View
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode('front')}
                 className={`px-2 py-1 text-xs rounded border ${viewMode === 'front' ? 'bg-blue-600 border-blue-500' : 'bg-gray-700 border-gray-600 hover:bg-gray-600'}`}
               >
@@ -1480,9 +1786,16 @@ export default function App() {
           </div>
 
           <div className="mt-3 text-xs opacity-70 space-y-1">
-            <div><span className="text-green-400">●</span> Workspace: Reachable positions (green spheres)</div>
-            <div><span className="text-yellow-400">●</span> Heatmap: Green=short, Red=long</div>
-            <div><span className="text-red-400">●</span> Forces: Compression forces on legs</div>
+            <div>
+              <span className="text-green-400">●</span> Workspace: Reachable positions (green
+              spheres)
+            </div>
+            <div>
+              <span className="text-yellow-400">●</span> Heatmap: Green=short, Red=long
+            </div>
+            <div>
+              <span className="text-red-400">●</span> Forces: Compression forces on legs
+            </div>
           </div>
         </div>
 
@@ -1490,11 +1803,17 @@ export default function App() {
           <h2 className="text-lg font-semibold mb-2">Self-tests</h2>
           <div className="text-sm opacity-80 mb-2">Console has detailed output. Summary below.</div>
           <div className="flex gap-3 text-sm">
-            <span className="px-2 py-1 rounded-xl bg-gray-700 border border-gray-600">Passed: {tests.passed}</span>
-            <span className="px-2 py-1 rounded-xl bg-gray-700 border border-gray-600">Failed: {tests.failed}</span>
+            <span className="px-2 py-1 rounded-xl bg-gray-700 border border-gray-600">
+              Passed: {tests.passed}
+            </span>
+            <span className="px-2 py-1 rounded-xl bg-gray-700 border border-gray-600">
+              Failed: {tests.failed}
+            </span>
           </div>
           <ul className="mt-2 text-xs space-y-1 opacity-80 max-h-40 overflow-y-auto">
-            {tests.details.slice(0,6).map((d,i)=>(<li key={i}>{d}</li>))}
+            {tests.details.slice(0, 6).map((d, i) => (
+              <li key={i}>{d}</li>
+            ))}
           </ul>
         </div>
       </div>
@@ -1502,10 +1821,10 @@ export default function App() {
       {/* 3D View */}
       <div className="lg:col-span-2 h-[70vh] lg:h-screen rounded-2xl overflow-hidden border border-gray-700 shadow">
         <Canvas camera={{ position: [300, -250, 280], up: [0, 0, 1], fov: 40 }}>
-          <StewartStage 
-            pose={pose} 
-            anim={anim} 
-            geom={geom} 
+          <StewartStage
+            pose={pose}
+            anim={anim}
+            geom={geom}
             onPose={setPose}
             visualizations={visualizations}
             limits={limits}

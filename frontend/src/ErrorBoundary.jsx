@@ -73,12 +73,8 @@ class ErrorBoundary extends React.Component {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Oops! Something went wrong
-              </h1>
-              <p className="text-gray-600">
-                The application encountered an unexpected error.
-              </p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Oops! Something went wrong</h1>
+              <p className="text-gray-600">The application encountered an unexpected error.</p>
             </div>
 
             {/* Error Details */}
@@ -104,8 +100,8 @@ class ErrorBoundary extends React.Component {
             {errorCount > 1 && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
                 <p className="text-yellow-800 text-sm">
-                  <strong>Warning:</strong> This error has occurred {errorCount} times.
-                  You may need to reload the page.
+                  <strong>Warning:</strong> This error has occurred {errorCount} times. You may need
+                  to reload the page.
                 </p>
               </div>
             )}

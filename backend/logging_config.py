@@ -2,12 +2,14 @@
 Structured logging configuration
 """
 
-import logging
 import json
+import logging
 import sys
 from datetime import datetime
 from pathlib import Path
+
 from pythonjsonlogger import jsonlogger
+
 from config import settings
 
 
@@ -42,9 +44,7 @@ def setup_logging():
     # Console handler with JSON formatting in production
     console_handler = logging.StreamHandler(sys.stdout)
     if settings.is_production:
-        console_formatter = CustomJsonFormatter(
-            "%(timestamp)s %(level)s %(name)s %(message)s"
-        )
+        console_formatter = CustomJsonFormatter("%(timestamp)s %(level)s %(name)s %(message)s")
     else:
         console_formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -55,9 +55,7 @@ def setup_logging():
 
     # File handler with JSON formatting
     file_handler = logging.FileHandler(log_dir / "api.log")
-    file_formatter = CustomJsonFormatter(
-        "%(timestamp)s %(level)s %(name)s %(message)s"
-    )
+    file_formatter = CustomJsonFormatter("%(timestamp)s %(level)s %(name)s %(message)s")
     file_handler.setFormatter(file_formatter)
     root_logger.addHandler(file_handler)
 

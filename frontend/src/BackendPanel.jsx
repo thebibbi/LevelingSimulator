@@ -69,20 +69,22 @@ const BackendPanel = ({ onBackendCalculation, className = '' }) => {
           </button>
         </div>
 
-        {error && (
-          <div className="text-xs text-red-600 mt-1">
-            Error: {error}
-          </div>
-        )}
+        {error && <div className="text-xs text-red-600 mt-1">Error: {error}</div>}
       </div>
 
       {showDetails && (
         <div className="details-section mb-3 p-2 bg-gray-50 rounded text-xs">
           {health ? (
             <>
-              <div><strong>API Status:</strong> {health.status}</div>
-              <div><strong>Version:</strong> {health.version}</div>
-              <div><strong>Message:</strong> {health.message}</div>
+              <div>
+                <strong>API Status:</strong> {health.status}
+              </div>
+              <div>
+                <strong>Version:</strong> {health.version}
+              </div>
+              <div>
+                <strong>Message:</strong> {health.message}
+              </div>
             </>
           ) : (
             <div className="text-gray-500">No health data available</div>
@@ -99,9 +101,7 @@ const BackendPanel = ({ onBackendCalculation, className = '' }) => {
             disabled={!connected}
             className="w-4 h-4"
           />
-          <span className="text-sm">
-            Use Backend Calculations
-          </span>
+          <span className="text-sm">Use Backend Calculations</span>
         </label>
         <p className="text-xs text-gray-600 mt-1">
           {useBackend
@@ -121,16 +121,20 @@ const BackendPanel = ({ onBackendCalculation, className = '' }) => {
           </button>
 
           {calcError && (
-            <div className="text-xs text-red-600 mt-2">
-              Calculation Error: {calcError}
-            </div>
+            <div className="text-xs text-red-600 mt-2">Calculation Error: {calcError}</div>
           )}
 
           {result && showDetails && (
             <div className="result-display mt-2 p-2 bg-gray-50 rounded text-xs">
-              <div><strong>Configuration:</strong> {result.configuration}</div>
-              <div><strong>Valid:</strong> {result.valid ? 'Yes' : 'No'}</div>
-              <div><strong>Leg Lengths:</strong></div>
+              <div>
+                <strong>Configuration:</strong> {result.configuration}
+              </div>
+              <div>
+                <strong>Valid:</strong> {result.valid ? 'Yes' : 'No'}
+              </div>
+              <div>
+                <strong>Leg Lengths:</strong>
+              </div>
               <ul className="ml-4 mt-1">
                 {result.leg_lengths.map((length, i) => (
                   <li key={i}>

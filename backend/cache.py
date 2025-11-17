@@ -2,11 +2,13 @@
 Caching layer using Redis for IK calculation results
 """
 
-import json
 import hashlib
-from typing import Optional, Any
+import json
 from functools import wraps
+from typing import Any, Optional
+
 import redis
+
 from config import settings
 
 # Redis client
@@ -21,9 +23,7 @@ def init_cache():
         return
 
     try:
-        redis_client = redis.from_url(
-            settings.redis_url, decode_responses=True, socket_timeout=5
-        )
+        redis_client = redis.from_url(settings.redis_url, decode_responses=True, socket_timeout=5)
         # Test connection
         redis_client.ping()
         print(f"✓ Redis connected: {settings.redis_url}")

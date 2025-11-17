@@ -3,10 +3,10 @@ Configuration Management for Platform Leveling API
 Uses pydantic-settings for environment variable management
 """
 
-import os
 from typing import List
-from pydantic_settings import BaseSettings
+
 from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):

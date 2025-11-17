@@ -2,9 +2,11 @@
 API Authentication and Security
 """
 
-from fastapi import Security, HTTPException, status, Depends
-from fastapi.security import APIKeyHeader
 from typing import Optional
+
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import APIKeyHeader
+
 from config import settings
 
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)

@@ -3,29 +3,29 @@ FastAPI REST API for Platform Leveling System - Production Ready
 Includes: Authentication, Rate Limiting, Caching, Logging, Monitoring, Database
 """
 
-import time
-import math
+import json
 import logging
-from datetime import datetime
-from typing import List, Optional, Literal
+import math
+import time
 from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import List, Literal, Optional
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Depends, status
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field, validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from prometheus_fastapi_instrumentator import Instrumentator
+from slowapi.util import get_remote_address
 
-# Local imports
+from auth import optional_api_key, verify_api_key
+from cache import generate_cache_key, get_cache_stats, get_cached, init_cache, set_cached
 from config import settings
-from auth import verify_api_key, optional_api_key
-from cache import init_cache, cache_result, get_cache_stats, get_cached, set_cached, generate_cache_key
-from database import init_db, get_db, log_calculation
-from logging_config import setup_logging, log_request
+from database import init_db
+from logging_config import log_request, setup_logging
 
 # Set up logging
 setup_logging()
@@ -122,9 +122,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 class PlatformConfigModel(BaseModel):
     """Platform geometry configuration with validation"""
 
-    base_radius: float = Field(
-        default=120.0, ge=10.0, le=500.0, description="Base radius in mm"
-    )
+    base_radius: float = Field(default=120.0, ge=10.0, le=500.0, description="Base radius in mm")
     platform_radius: float = Field(
         default=70.0, ge=10.0, le=500.0, description="Platform radius in mm"
     )
@@ -163,9 +161,9 @@ class PoseRequest(BaseModel):
     pitch: float = Field(default=0.0, ge=-90.0, le=90.0, description="Pitch angle in degrees")
     yaw: float = Field(default=0.0, ge=-180.0, le=180.0, description="Yaw angle in degrees")
 
-    configuration: Literal[
-        "3-3", "4-4", "6-3", "6-3-asymmetric", "6-3-redundant", "6-6", "8-8"
-    ] = Field(default="6-3", description="Platform configuration")
+    configuration: Literal["3-3", "4-4", "6-3", "6-3-asymmetric", "6-3-redundant", "6-6", "8-8"] = (
+        Field(default="6-3", description="Platform configuration")
+    )
 
     geometry: Optional[PlatformConfigModel] = Field(
         default=None, description="Optional custom geometry parameters"
@@ -327,8 +325,7 @@ def calculate_ik(pose: PoseRequest, request: Optional[Request] = None) -> dict:
 
         # Check validity
         valid = all(
-            geometry.min_leg_length <= length <= geometry.max_leg_length
-            for length in leg_lengths
+            geometry.min_leg_length <= length <= geometry.max_leg_length for length in leg_lengths
         )
 
         calculation_time = (time.time() - start_time) * 1000  # ms
@@ -365,6 +362,7 @@ def calculate_ik(pose: PoseRequest, request: Optional[Request] = None) -> dict:
 
 
 # API Endpoints
+
 
 @app.get("/", response_model=HealthResponse)
 async def root():
@@ -476,9 +474,7 @@ async def get_config():
 
 
 @app.post("/config", response_model=PlatformConfigModel)
-async def update_config(
-    config: PlatformConfigModel, api_key: str = Depends(verify_api_key)
-):
+async def update_config(config: PlatformConfigModel, api_key: str = Depends(verify_api_key)):
     """Update platform configuration (requires authentication)"""
     global current_config
     current_config = config
